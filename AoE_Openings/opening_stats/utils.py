@@ -138,6 +138,7 @@ def generate_filter_statements_from_parameters(min_elo,
                                                include_patch_ids,
                                                include_map_ids,
                                                include_civ_ids,
+                                               clamp_civ_ids,
                                                include_player_ids):
     filter_string = ".filter("
 
@@ -175,6 +176,24 @@ def generate_filter_statements_from_parameters(min_elo,
                 filter_string += ' | '
             filter_string += f'Q(player1_civilization={civ_id}) | Q(player2_civilization={civ_id})'
             count += 1
+        filter_string += ","
+    
+    if len(clamp_civ_ids) and clamp_civ_ids[0] != -1:
+        filter_string += "(("
+        count = 0
+        for civ_id in clamp_civ_ids:
+            if count >0 and count < len(clamp_civ_ids):
+                filter_string += ' | '
+            filter_string += f'Q(player1_civilization={civ_id})'
+            count += 1
+        filter_string += ") & ("
+        count = 0
+        for civ_id in clamp_civ_ids:
+            if count >0 and count < len(clamp_civ_ids):
+                filter_string += ' | '
+            filter_string += f'Q(player2_civilization={civ_id})'
+            count += 1
+        filter_string += "))"
         filter_string += ","
     
     if len(include_player_ids) and include_player_ids[0] != -1:
