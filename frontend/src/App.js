@@ -8,12 +8,6 @@ class App extends Component {
     civilizations: []
   }
   componentDidMount() {
-    fetch('http://127.0.0.1:8000/api/v1/civ_win_rates/')
-    .then(res => res.json())
-    .then((data) => {
-      this.setState({ civilizations: data })
-    })
-    .catch(console.log)
   }
   render () {
     return (

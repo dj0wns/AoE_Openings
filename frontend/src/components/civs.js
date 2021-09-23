@@ -11,6 +11,7 @@ class Civs extends Component {
     super(props);
     this.input = React.createRef();
     this.handleSubmit = this.handleSubmit.bind(this);
+    this.query_params = this.props.location.search;
   }
   componentDidMount() {
      fetch('http://127.0.0.1:8000/api/v1/civ_win_rates/'.concat(this.props.location.search))
@@ -42,7 +43,7 @@ class Civs extends Component {
     if (this.state.civilizations.hasOwnProperty("civs_list")) {
       return (
         <div>
-            <Input ref={this.input} callback={this.handleSubmit} parent_query={this.props.location.search}/>
+            <Input ref={this.input} callback={this.handleSubmit} parent_query={this.query_params}/>
             <h3> Total Games in Query: {this.state.civilizations.total}</h3>
             <table id="civTable" class="display table table-striped table-bordered table-sm" cellspacing="0" width="80%" data-toggle="table">
               <thead>
@@ -67,7 +68,7 @@ class Civs extends Component {
     }
     return (
       <div>
-        <Input ref={this.input} callback={this.handleSubmit}/>
+        <Input ref={this.input} callback={this.handleSubmit} parent_query={this.query_params}/>
         <center><h1>Loading Results...</h1></center>
       </div>
     );

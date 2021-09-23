@@ -2,25 +2,6 @@ import React, {Component} from 'react'
 import Slider from './slider'
 
 class Input extends Component {
-  constructor(props){
-    super(props);
-    this.callback = this.props.callback;
-    this.handleSubmit = this.handleSubmit.bind(this);
-    this.min_elo_callback = this.min_elo_callback.bind(this);
-    this.max_elo_callback = this.max_elo_callback.bind(this);
-    this.handle_multiselect_change = this.handle_multiselect_change.bind(this);
-    this.handle_checkbox_change = this.handle_checkbox_change.bind(this);
-    this.handle_change = this.handle_change.bind(this);
-  }
-
-  componentDidMount() {
-     fetch('http://127.0.0.1:8000/api/v1/info/')
-     .then(res => res.json())
-     .then((data) => {
-       this.setState({ info: data })
-     })
-     .catch(console.log)
-  }
   state = {
     info: {civs:[], ladders:[], maps:[]},
     min_elo_value: 0,
@@ -32,6 +13,59 @@ class Input extends Component {
     exclude_civs: [],
     clamp_civs: [],
 
+  }
+  constructor(props){
+    super(props);
+    this.callback = this.props.callback;
+    this.handleSubmit = this.handleSubmit.bind(this);
+    this.min_elo_callback = this.min_elo_callback.bind(this);
+    this.max_elo_callback = this.max_elo_callback.bind(this);
+    this.handle_multiselect_change = this.handle_multiselect_change.bind(this);
+    this.handle_checkbox_change = this.handle_checkbox_change.bind(this);
+    this.handle_change = this.handle_change.bind(this);
+    this.search_params = new URLSearchParams(this.props.parent_query)
+  }
+
+  componentDidMount() {
+    fetch('http://127.0.0.1:8000/api/v1/info/')
+    .then(res => res.json())
+    .then((data) => {
+      this.setState({ info: data })
+    })
+    .catch(console.log)
+
+    //Set Query params to form values, has to be done here or the drop downs arent populated
+    var include_ladder_ids = [];
+    if (this.search_params.get('include_ladder_ids')){
+      include_ladder_ids = this.search_params.get('include_ladder_ids').split(",").map(Number);
+    }
+    var include_map_ids = [];
+    if (this.search_params.get('include_map_ids')){
+      include_map_ids = this.search_params.get('include_map_ids').split(",").map(Number);
+    }
+    var include_civ_ids = [];
+    if (this.search_params.get('include_civ_ids')){
+      include_civ_ids = this.search_params.get('include_civ_ids').split(",").map(Number);
+    }
+    var exclude_civ_ids = [];
+    if (this.search_params.get('exclude_civ_ids')){
+      exclude_civ_ids = this.search_params.get('exclude_civ_ids').split(",").map(Number);
+    }
+    var clamp_civ_ids = [];
+    if (this.search_params.get('clamp_civ_ids')){
+      clamp_civ_ids = this.search_params.get('clamp_civ_ids').split(",").map(Number);
+    }
+
+    this.setState({
+        min_elo_value: this.search_params.get('min_elo'),
+        max_elo_value: this.search_params.get('max_elo'),
+        exclude_mirrors: this.search_params.get('exclude_mirrors'),
+        include_ladders: include_ladder_ids,
+        include_maps: include_map_ids,
+        include_civs: include_civ_ids,
+        exclude_civs: exclude_civ_ids,
+        clamp_civs: clamp_civ_ids,
+    })
   }
   handleSubmit(e) {
     e.preventDefault();
@@ -121,17 +155,21 @@ class Input extends Component {
             <div class="form-check col-md-6" >
               <label for="include_ladders">Ladders</label>
               <select multiple name="include_ladders" id="include_ladders" class="form-control" onChange={this.handle_multiselect_change}>
-                {Object.keys(this.state.info.ladders).map((ladder) => (
-                  <option value={this.state.info.ladders[ladder]}>{ladder}</option>
-                ))}
+                {Object.keys(this.state.info.ladders).map((ladder) => {
+                  if (this.state.include_ladders.includes(this.state.info.ladders[ladder]))
+                    return <option value={this.state.info.ladders[ladder]} selected>{ladder}</option>
+                  return <option value={this.state.info.ladders[ladder]}>{ladder}</option>
+                })}
               </select>
             </div>
             <div class="form-check col-md-6">
               <label for="include_maps">Maps</label>
               <select multiple name="include_maps" id="include_maps" class="form-control" onChange={this.handle_multiselect_change}>
-                {Object.keys(this.state.info.maps).map((map) => (
-                  <option value={this.state.info.maps[map]}>{map}</option>
-                ))}
+                {Object.keys(this.state.info.maps).map((map) => {
+                  if (this.state.include_maps.includes(this.state.info.maps[map]))
+                    return <option value={this.state.info.maps[map]} selected>{map}</option>
+                  return <option value={this.state.info.maps[map]}>{map}</option>
+                })}
               </select>
             </div>
           </div>
@@ -139,25 +177,31 @@ class Input extends Component {
             <div class="form-check col-md-4">
               <label for="include_civs">Include Civilizations</label>
               <select multiple name="include_civs" id="include_civs" class="form-control" onChange={this.handle_multiselect_change}>
-                {Object.keys(this.state.info.civs).map((civ) => (
-                  <option value={this.state.info.civs[civ]}>{civ}</option>
-                ))}
+                {Object.keys(this.state.info.civs).map((civ) => {
+                  if (this.state.include_civs.includes(this.state.info.civs[civ]))
+                    return <option value={this.state.info.civs[civ]} selected>{civ}</option>
+                  return <option value={this.state.info.civs[civ]}>{civ}</option>
+                })}
               </select>
             </div>
             <div class="form-check col-md-4">
               <label for="exclude_civs">Exclude Civilizations</label>
               <select multiple name="exclude_civs" id="exclude_civs" class="form-control" onChange={this.handle_multiselect_change}>
-                {Object.keys(this.state.info.civs).map((civ) => (
-                  <option value={this.state.info.civs[civ]}>{civ}</option>
-                ))}
+                {Object.keys(this.state.info.civs).map((civ) => {
+                  if (this.state.exclude_civs.includes(this.state.info.civs[civ]))
+                    return <option value={this.state.info.civs[civ]} selected>{civ}</option>
+                  return <option value={this.state.info.civs[civ]}>{civ}</option>
+                })}
               </select>
             </div>
             <div class="form-check col-md-4">
               <label for="clamp_civs">Clamp Civilizations</label>
               <select multiple name="clamp_civs" id="clamp_civs" class="form-control" onChange={this.handle_multiselect_change}>
-                {Object.keys(this.state.info.civs).map((civ) => (
-                  <option value={this.state.info.civs[civ]}>{civ}</option>
-                ))}
+                {Object.keys(this.state.info.civs).map((civ) => {
+                  if (this.state.clamp_civs.includes(this.state.info.civs[civ]))
+                    return <option value={this.state.info.civs[civ]} selected>{civ}</option>
+                  return <option value={this.state.info.civs[civ]}>{civ}</option>
+                })}
               </select>
             </div>
           </div>
