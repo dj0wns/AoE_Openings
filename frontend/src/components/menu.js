@@ -11,6 +11,7 @@ const Menu = () => {
           <Nav className='mr-auto'>
             <Nav.Link href="/civ_stats">Civilization Stats</Nav.Link>
             <Nav.Link href="/opening_stats">Opening Stats</Nav.Link>
+            <Nav.Link href="/test">Test</Nav.Link>
           </Nav>
         </Navbar.Collapse>
       </Navbar>
