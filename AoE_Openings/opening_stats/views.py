@@ -58,7 +58,10 @@ class Info(generics.ListAPIView):
       'Acclivity':157,
       'Marketplace':162,
       'Frigid Lake':159,
-      'Ring Fortress':166
+      'Ring Fortress':166,
+      'Northern Isles':165,
+      'Greenland':160,
+      'Mountain Range':164
       
     }
     for name, value in aoe_data["civ_names"].items():
