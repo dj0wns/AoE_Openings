@@ -34,6 +34,24 @@ class Info(generics.ListAPIView):
     map_dict = {
       "Arabia":9,
       'Arena':29,
+      'Runestones':167,
+      'African Clearing':149,
+      'Gold Rush':17,
+      'Golden Pit':71,
+      'Four Lakes':140,
+      'Team Islands':23,
+      'MegaRandom':77,
+      'Hideout':72,
+      'Acropolis':49,
+      'Land Nomad':141,
+      'Valley':76,
+      'Crater':152,
+      'Mongolia':26,
+      'Archipelago':10,
+      'Atacama':150,
+      'Islands':19,
+      'Coastal':13,
+      'Alpine Lakes':122
     }
     for name, value in aoe_data["civ_names"].items():
       civ_dict[name] = int(value) - 10270
