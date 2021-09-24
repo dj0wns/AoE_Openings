@@ -51,7 +51,15 @@ class Info(generics.ListAPIView):
       'Atacama':150,
       'Islands':19,
       'Coastal':13,
-      'Alpine Lakes':122
+      'Alpine Lakes':122,
+      'Lowland':161,
+      'Meadow':163,
+      'Eruption':158,
+      'Acclivity':157,
+      'Marketplace':162,
+      'Frigid Lake':159,
+      'Ring Fortress':166
+      
     }
     for name, value in aoe_data["civ_names"].items():
       civ_dict[name] = int(value) - 10270
