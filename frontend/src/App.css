@@ -47,3 +47,11 @@
   padding-left: 5%;
   padding-right: 5%;
 }
+
+.rdt_TableCell {
+  font-size:Medium;
+}
+
+.rdt_TableHeadRow {
+  font-size:Large;
+}

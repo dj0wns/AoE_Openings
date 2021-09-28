@@ -3,12 +3,13 @@ import Slider from './slider'
 
 class Input extends Component {
   state = {
-    info: {civs:[], ladders:[], maps:[]},
+    info: {civs:[], ladders:[], maps:[], patches:[]},
     min_elo_value: 0,
     max_elo_value: 3000,
     exclude_mirrors: true,
     include_ladders: [],
     include_maps: [],
+    include_patches: [],
     include_civs: [],
     exclude_civs: [],
     clamp_civs: [],
@@ -43,6 +44,10 @@ class Input extends Component {
     if (this.search_params.get('include_map_ids')){
       include_map_ids = this.search_params.get('include_map_ids').split(",").map(Number);
     }
+    var include_patch_ids = [];
+    if (this.search_params.get('include_patch_ids')){
+      include_patch_ids = this.search_params.get('include_patch_ids').split(",").map(Number);
+    }
     var include_civ_ids = [];
     if (this.search_params.get('include_civ_ids')){
       include_civ_ids = this.search_params.get('include_civ_ids').split(",").map(Number);
@@ -62,6 +67,7 @@ class Input extends Component {
         exclude_mirrors: this.search_params.get('exclude_mirrors'),
         include_ladders: include_ladder_ids,
         include_maps: include_map_ids,
+        include_patches: include_patch_ids,
         include_civs: include_civ_ids,
         exclude_civs: exclude_civ_ids,
         clamp_civs: clamp_civ_ids,
@@ -86,6 +92,9 @@ class Input extends Component {
     }
     if (this.state.include_maps.length) {
       data_dict['include_map_ids'] = this.state.include_maps.toString();
+    }
+    if (this.state.include_patches.length) {
+      data_dict['include_patch_ids'] = this.state.include_patches.toString();
     }
     if (this.state.include_civs.length) {
       data_dict['include_civ_ids'] = this.state.include_civs.toString();
@@ -152,7 +161,17 @@ class Input extends Component {
             </div>
           </div>
           <div class="form-row">
-            <div class="form-check col-md-6" >
+            <div class="form-check col-md-4" >
+              <label for="include_patches">Patches</label>
+              <select multiple name="include_patches" id="include_patches" class="form-control" onChange={this.handle_multiselect_change}>
+                {this.state.info.patches.map((patch, index) => {
+                  if (this.state.include_patches.includes(this.state.info.patches[index]))
+                    return <option value={this.state.info.patches[index]} selected>{patch}</option>
+                  return <option value={this.state.info.patches[index]}>{patch}</option>
+                })}
+              </select>
+            </div>
+            <div class="form-check col-md-4" >
               <label for="include_ladders">Ladders</label>
               <select multiple name="include_ladders" id="include_ladders" class="form-control" onChange={this.handle_multiselect_change}>
                 {Object.keys(this.state.info.ladders).map((ladder) => {
@@ -162,7 +181,7 @@ class Input extends Component {
                 })}
               </select>
             </div>
-            <div class="form-check col-md-6">
+            <div class="form-check col-md-4">
               <label for="include_maps">Maps</label>
               <select multiple name="include_maps" id="include_maps" class="form-control" onChange={this.handle_multiselect_change}>
                 {Object.keys(this.state.info.maps).map((map) => {

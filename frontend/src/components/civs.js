@@ -1,6 +1,7 @@
-import React, {Component} from 'react'
+import React, {Component, PropTypes } from 'react';
 import queryString from 'query-string';
-import Input from './input'
+import Input from './input';
+import DataTable from 'react-data-table-component';
 
 
 class Civs extends Component {
@@ -40,29 +41,29 @@ class Civs extends Component {
      this.props.history.push(`${window.location.pathname}` + query_string)
   }
   render () {
+    const columns = [
+        {
+          name: "Name",
+          selector: row => row.name,
+          sortable: true,
+        },
+        {
+          name: "Win Rate",
+          selector: row => (row.wins / row.total * 100).toFixed(2)+'%',
+          sortable: true,
+        },
+        {
+          name: "Play Rate",
+          selector: row => (row.total/this.state.civilizations.total*100/2).toFixed(2)+'%',
+          sortable: true,
+        }
+    ]
     if (this.state.civilizations.hasOwnProperty("civs_list")) {
       return (
         <div>
             <Input ref={this.input} callback={this.handleSubmit} parent_query={this.query_params}/>
             <h3> Total Games in Query: {this.state.civilizations.total}</h3>
-            <table id="civTable" class="display table table-striped table-bordered table-sm" cellspacing="0" width="80%" data-toggle="table">
-              <thead>
-                <tr>
-                  <th data-field="name" data-sortable="true" class="th-sm">Civilization</th>
-                  <th data-field="win-rate" data-sortable="true" class="th-sm">Win Rate</th>
-                  <th data-field="play-rate" data-sortable="true" class="th-sm">Play Rate</th>
-                </tr>
-              </thead>
-              <tbody>
-                {this.state.civilizations.civs_list.map((civ) => (
-                  <tr>
-                    <td>{civ.name}</td>
-                    <td>{(civ.wins/(civ.total)*100).toFixed(2)+'%'}</td>
-                    <td>{(civ.total/this.state.civilizations.total*100/2).toFixed(2)+'%'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <DataTable id="civTable" striped responsive data={this.state.civilizations.civs_list} columns={columns} cellspacing="0" width="80%"/>
         </div>
       );
     }
