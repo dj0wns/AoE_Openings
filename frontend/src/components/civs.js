@@ -15,10 +15,12 @@ class Civs extends Component {
     this.query_params = this.props.location.search;
   }
   componentDidMount() {
-     fetch('http://127.0.0.1:8000/api/v1/civ_win_rates/'.concat(this.props.location.search))
+    fetch('http://127.0.0.1:8000/api/v1/civ_win_rates/'.concat(this.props.location.search))
      .then(res => res.json())
      .then((data) => {
-       this.setState({ civilizations: data })
+       data.civs_list = data.civs_list.filter(function(civ) {return civ.total > 0})
+       // Filter out civs with 0 matches
+       this.setState({ civilizations: data})
      })
      .catch(console.log)
   }
@@ -32,11 +34,13 @@ class Civs extends Component {
     }
     this.setState({ civilizations: [] })
     fetch('http://127.0.0.1:8000/api/v1/civ_win_rates/'.concat(query_string))
-     .then(res => res.json())
-     .then((data) => {
-       this.setState({ civilizations: data })
-     })
-     .catch(console.log)
+      .then(res => res.json())
+      .then((data) => {
+        data.civs_list = data.civs_list.filter(function(civ) {return civ.total > 0})
+        // Filter out civs with 0 matches
+        this.setState({ civilizations: data})
+      })
+      .catch(console.log)
      // update page name
      this.props.history.push(`${window.location.pathname}` + query_string)
   }

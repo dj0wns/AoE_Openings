@@ -29,17 +29,27 @@ class OpeningNames(generics.ListAPIView):
 class Info(generics.ListAPIView):
   def list (self, request):
     ret_dict = {}
-    civ_dict = {}
-    ladder_dict = {"Random Map 1v1":3, "Empire Wars 1v1":13}
-    map_dict = {
-      "Arabia":9,
-      'Arena':29,
-    }
+    civ_list = []
+    ladder_list = [
+      {'name':"Random Map 1v1", 'id':"3"},
+      {'name':"Empire Wars 1v1", 'id':"13"},
+    ]
+    map_list = [
+      {'name':"Arabia", 'id':"9"},
+      {'name':"Arena", 'id':"29"},
+    ]
+    patches = Matches.objects.values('patch_number').distinct()
+    patch_list = []
+    for patch in patches:
+      if patch['patch_number'] > 0:
+        patch_list.append({'name':patch['patch_number'], 'id':patch['patch_number']})
+    ret_dict["patches"] = patch_list
+
     for name, value in aoe_data["civ_names"].items():
-      civ_dict[name] = int(value) - 10270
-    ret_dict["civs"] = civ_dict
-    ret_dict["ladders"] = ladder_dict
-    ret_dict["maps"] = map_dict
+      civ_list.append({"name":name, "id":int(value) - 10270})
+    ret_dict["civs"] = civ_list
+    ret_dict["ladders"] = ladder_list
+    ret_dict["maps"] = map_list
     content = JSONRenderer().render(ret_dict)
     return HttpResponse(content)
 
