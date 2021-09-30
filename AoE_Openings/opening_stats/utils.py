@@ -26,17 +26,17 @@ Basic_Strategies = [
             OpeningType.FeudalSkirmOpening.value
         ], []
     ],
-    [
-        "Fast_Castle",
-        [OpeningType.FastCastle.value],
-        [
-          OpeningType.AnyDrush.value,
-          OpeningType.FeudalScoutOpening.value,
-          OpeningType.FeudalArcherOpening.value,
-          OpeningType.FeudalSkirmOpening.value,
-          OpeningType.Maa.value
-        ]
-    ],
+    #[
+    #    "Fast_Castle",
+    #    [OpeningType.FastCastle.value],
+    #    [
+    #      OpeningType.AnyDrush.value,
+    #      OpeningType.FeudalScoutOpening.value,
+    #      OpeningType.FeudalArcherOpening.value,
+    #      OpeningType.FeudalSkirmOpening.value,
+    #      OpeningType.Maa.value
+    #    ]
+    #],
     #[
     #    "Did_Nothing",
     #    [OpeningType.Unused.value],
@@ -169,6 +169,37 @@ def generate_aggregate_statements_from_basic_openings():
   aggregate_string+=')'
   return aggregate_string
 
+def generate_aggregate_statements_from_opening_matchups():
+  aggregate_string = '.aggregate(total=Count("id"),'
+  predicate_titles = [ "_total", "_wins", "_losses"]
+  predicates = ["", "player{}_victory=1", "player{}_victory=0"]
+  strategies = Basic_Strategies;
+  for opening1 in strategies:
+    if not len(opening1[2]):
+      opening1[2].append(OpeningType.Unused.value) #Add unused flag to remove did nothing if no exclusions
+    for opening2 in strategies:
+      if not len(opening2[2]):
+        opening2[2].append(OpeningType.Unused.value) #Add unused flag to remove did nothing if no exclusions
+      for predicate in range(len(predicates)):
+        aggregate_string+=f'{opening1[0]}_vs_{opening2[0]}{predicate_titles[predicate]}=Sum(Case('
+        for player in range(1,3): #1 indexed
+          second_player = (player + 2) % 2 + 1 #This cant be right to get player 2 for one and viceversa but it works so...
+          second_predicate = predicates[0] #if player 1 sets victory, player 2 doesnt matter
+          aggregate_string+='When('
+          aggregate_string+=opening_query_string(opening1[1], opening1[2], player, predicates[predicate])
+          aggregate_string += "&"
+          aggregate_string+=opening_query_string(opening2[1], opening2[2], second_player, second_predicate)
+          aggregate_string+=',then=1),'
+
+        #close the count(case
+        aggregate_string+=')),'
+
+        #if a mirror match only get the total then dip
+        if opening1==opening2:
+          break
+  #close aggregate
+  aggregate_string+=')'
+  return aggregate_string
 
 
 
