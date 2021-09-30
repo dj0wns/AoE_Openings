@@ -60,7 +60,7 @@ class OpeningWins extends Component {
         {
           name: "Play Rate",
           selector: row => row.total,
-          format: row => (row.total/this.state.openings.total*100/2).toFixed(2)+'% (' + row.total + ')',
+          format: row => (row.total/this.state.openings.total*100).toFixed(2)+'% (' + row.total + ')',
           sortable: true,
         }
     ]
