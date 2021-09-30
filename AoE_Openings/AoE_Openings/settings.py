@@ -51,6 +51,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.cache.UpdateCacheMiddleware',
+    'django.middleware.cache.FetchFromCacheMiddleware',
 ]
 
 ROOT_URLCONF = 'AoE_Openings.urls'
@@ -103,6 +105,18 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+CACHES = {
+  'default': {
+    'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+    'LOCATION': 'cache_table',
+    'TIMEOUT' : 21600, #6 hours, maybe increase further
+    'OPTIONS' : {
+      'MAX_ENTRIES': 2000
+    }
+  }
+}
+
+CACHE_MIDDLEWARE_SECONDS = 21600 #6 hours, maybe increase further
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
