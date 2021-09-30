@@ -1,6 +1,6 @@
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
-from django.db.models import F, Count, Case, When, Q
+from django.db.models import F, Count, Case, When, Q, Sum
 from rest_framework import generics
 from rest_framework.renderers import JSONRenderer
 from opening_stats.models import Openings, Matches
@@ -129,5 +129,20 @@ class OpeningWinRates(generics.ListAPIView):
     aggregate_string += utils.generate_aggregate_statements_from_basic_openings()
     print (aggregate_string)
     matches = eval(aggregate_string)
-    content = JSONRenderer().render(matches)
+    # convert counts to something more readable
+    opening_dict = {}
+    for key, value in matches.items():
+      # keys are of format opening_name_victoryType, so split into nested dict because nicer
+      # deal with total later
+      if key != 'total':
+        components = key.split("_")
+        opening_name = " ".join(components[:-1])
+        victory_type = components[-1]
+        if not opening_name in opening_dict:
+          opening_dict[opening_name] = {}
+        #sum key if already in dict (for mirrors)
+        opening_dict[opening_name][victory_type] = value
+        opening_dict[opening_name]["name"] = opening_name
+    out_dict = {"total":matches["total"], "openings_list":opening_dict.values()}
+    content = JSONRenderer().render(out_dict)
     return HttpResponse(content)

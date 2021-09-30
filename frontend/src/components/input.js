@@ -18,6 +18,9 @@ class Input extends Component {
   constructor(props){
     super(props);
     this.callback = this.props.callback;
+    console.log(this.props)
+    console.log(this.props.defaultmirror)
+    this.exclude_mirror_default = this.props.defaultmirror
     this.handleSubmit = this.handleSubmit.bind(this);
     this.setInitialSelected = this.setInitialSelected.bind(this);
     this.min_elo_callback = this.min_elo_callback.bind(this);
@@ -43,7 +46,7 @@ class Input extends Component {
 
   formatArgumentsForMultiSelect(arg_array, info_array) {
     let ret_array = [];
-    //TODO: Rewrite something more efficient
+    //TODO: Rewrite something more efficient - sort arg array and go through both only once
     for (var i of info_array) {
       for (var j of arg_array) {
         if (i.id == j) {
@@ -85,11 +88,25 @@ class Input extends Component {
       clamp_civ_ids = this.search_params.get('clamp_civ_ids').split(",").map(Number);
       clamp_civ_ids = this.formatArgumentsForMultiSelect(clamp_civ_ids, this.state.info.civs)
     }
+    var exclude_mirrors = this.exclude_mirror_default;
+    console.log(exclude_mirrors)
+    console.log(this.exclude_mirror_default)
+    if (this.search_params.get('exclude_mirrors') != null) {
+      exclude_mirrors = this.search_params.get('exclude_mirrors')
+    }
+    var min_elo_value = 0;
+    if (this.search_params.get('min_elo') != null) {
+      min_elo_value = this.search_params.get('min_elo')
+    }
+    var max_elo_value = 3000;
+    if (this.search_params.get('max_elo') != null) {
+      max_elo_value = this.search_params.get('max_elo')
+    }
 
     this.setState({
-        min_elo_value: this.search_params.get('min_elo'),
-        max_elo_value: this.search_params.get('max_elo'),
-        exclude_mirrors: this.search_params.get('exclude_mirrors'),
+        min_elo_value: min_elo_value,
+        max_elo_value: max_elo_value,
+        exclude_mirrors: exclude_mirrors,
         include_ladders: include_ladder_ids,
         include_maps: include_map_ids,
         include_patches: include_patch_ids,
@@ -112,14 +129,14 @@ class Input extends Component {
     e.preventDefault();
     var data_dict = {}
     //If unchanged from default dont add to query
-    if (this.state.min_elo_value != 0) {
+    if (this.state.min_elo_value != 0 && this.state.min_elo_value != null) {
       data_dict["min_elo"] = this.state.min_elo_value;
     }
 
-    if (this.state.max_elo_value != 3000) {
+    if (this.state.max_elo_value != 3000 && this.state.max_elo_value != null) {
       data_dict["max_elo"] = this.state.max_elo_value;
     }
-    if (this.state.exclude_mirrors != true) {
+    if (this.state.exclude_mirrors != null) {
       data_dict["exclude_mirrors"] = this.state.exclude_mirrors;
     }
     if (this.state.include_ladders.length) {

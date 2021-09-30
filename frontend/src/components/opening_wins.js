@@ -4,9 +4,9 @@ import Input from './input';
 import DataTable from 'react-data-table-component';
 
 
-class Civs extends Component {
+class OpeningWins extends Component {
   state = {
-    civilizations: []
+    openings: []
   }
   constructor(props){
     super(props);
@@ -15,12 +15,12 @@ class Civs extends Component {
     this.query_params = this.props.location.search;
   }
   componentDidMount() {
-    fetch('http://127.0.0.1:8000/api/v1/civ_win_rates/'.concat(this.props.location.search))
+    fetch('http://127.0.0.1:8000/api/v1/opening_win_rates/'.concat(this.props.location.search))
      .then(res => res.json())
      .then((data) => {
-       data.civs_list = data.civs_list.filter(function(civ) {return civ.total > 0})
-       // Filter out civs with 0 matches
-       this.setState({ civilizations: data})
+       data.openings_list = data.openings_list.filter(function(civ) {return civ.total > 0})
+       // Filter out openings with 0 matches
+       this.setState({ openings: data})
      })
      .catch(console.log)
   }
@@ -32,13 +32,13 @@ class Civs extends Component {
       query_string += value;
       query_string += '&';
     }
-    this.setState({ civilizations: [] })
-    fetch('http://127.0.0.1:8000/api/v1/civ_win_rates/'.concat(query_string))
+    this.setState({ openings: [] })
+    fetch('http://127.0.0.1:8000/api/v1/opening_win_rates/'.concat(query_string))
       .then(res => res.json())
       .then((data) => {
-        data.civs_list = data.civs_list.filter(function(civ) {return civ.total > 0})
-        // Filter out civs with 0 matches
-        this.setState({ civilizations: data})
+        data.openings_list = data.openings_list.filter(function(civ) {return civ.total > 0})
+        // Filter out openings with 0 matches
+        this.setState({ openings: data})
       })
       .catch(console.log)
      // update page name
@@ -60,26 +60,26 @@ class Civs extends Component {
         {
           name: "Play Rate",
           selector: row => row.total,
-          format: row => (row.total/this.state.civilizations.total*100/2).toFixed(2)+'% (' + row.total + ')',
+          format: row => (row.total/this.state.openings.total*100/2).toFixed(2)+'% (' + row.total + ')',
           sortable: true,
         }
     ]
-    if (this.state.civilizations.hasOwnProperty("civs_list")) {
+    if (this.state.openings.hasOwnProperty("openings_list")) {
       return (
         <div>
-            <Input defaultmirror={true} ref={this.input} callback={this.handleSubmit} parent_query={this.query_params}/>
-            <h3> Total Games in Query: {this.state.civilizations.total}</h3>
-            <DataTable id="civTable" striped responsive data={this.state.civilizations.civs_list} columns={columns} cellspacing="0" width="80%" defaultSortFieldId={1}/>
+            <Input defaultmirror={false} ref={this.input} callback={this.handleSubmit} parent_query={this.query_params}/>
+            <h3> Total Games in Query: {this.state.openings.total}</h3>
+            <DataTable id="civTable" striped responsive data={this.state.openings.openings_list} columns={columns} cellspacing="0" width="80%" defaultSortFieldId={1}/>
         </div>
       );
     }
     return (
       <div>
-        <Input defaultmirror={true} ref={this.input} callback={this.handleSubmit} parent_query={this.query_params}/>
+        <Input defaultmirror={false} ref={this.input} callback={this.handleSubmit} parent_query={this.query_params}/>
         <center><h1>Loading Results...</h1></center>
       </div>
     );
   }
 }
 
-export default Civs
+export default OpeningWins
