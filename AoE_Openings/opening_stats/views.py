@@ -1,4 +1,4 @@
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
 from django.shortcuts import render
 from django.db.models import F, Count, Case, When, Q, Sum
 from rest_framework import generics
@@ -55,28 +55,12 @@ class Info(generics.ListAPIView):
 
 class CivWinRates(generics.ListAPIView):
   def list (self, request):
-    min_elo = int(request.GET.get('min_elo', "0").split(",")[0])
-    max_elo = int(request.GET.get('max_elo', "9999").split(",")[0])
-    exclude_mirrors = request.GET.get('exclude_mirrors', "True").split(",")[0].lower() == "true"
-    include_ladder_ids = list(map(int, request.GET.get('include_ladder_ids', "-1").split(",")))
-    include_patch_ids = list(map(int, request.GET.get('include_patch_ids', "-1").split(",")))
-    include_map_ids = list(map(int, request.GET.get('include_map_ids', "-1").split(",")))
-    include_civ_ids = list(map(int, request.GET.get('include_civ_ids', "-1").split(",")))
-    exclude_civ_ids = list(map(int, request.GET.get('exclude_civ_ids', "-1").split(",")))
-    clamp_civ_ids = list(map(int, request.GET.get('clamp_civ_ids', "-1").split(",")))
-    include_player_ids = list(map(int, request.GET.get('include_player_ids', "-1").split(",")))
+    data, error = utils.parse_standard_query_parameters(request, True)
+    if error:
+      HttpResponseBadRequest()
     aggregate_string = "Matches.objects"
-    aggregate_string += utils.generate_filter_statements_from_parameters(min_elo,
-                                                                         max_elo,
-                                                                         include_ladder_ids,
-                                                                         include_patch_ids,
-                                                                         include_map_ids,
-                                                                         include_civ_ids,
-                                                                         clamp_civ_ids,
-                                                                         include_player_ids);
-    aggregate_string += utils.generate_exclude_statements_from_parameters(exclude_mirrors,
-                                                                          exclude_civ_ids)
-    print(aggregate_string, exclude_mirrors)
+    aggregate_string += utils.generate_filter_statements_from_parameters(data)
+    aggregate_string += utils.generate_exclude_statements_from_parameters(data)
     aggregate_string += '.aggregate('\
             'total=Count("id"),' #data only has games with a conclusion so...
     for name, value in aoe_data["civ_names"].items():
@@ -89,104 +73,41 @@ class CivWinRates(generics.ListAPIView):
     aggregate_string += ')'
     matches = eval(aggregate_string)
     # convert counts to something more readable
-    civ_dict = {}
-    for key, value in matches.items():
-      # keys are of format civ_victoryType, so split into nested dict because nicer
-      # deal with total later
-      if key != 'total':
-        components = key.split("_")
-        if not components[0] in civ_dict:
-          civ_dict[components[0]] = {}
-        civ_dict[components[0]][components[1]] = value
-        civ_dict[components[0]]["name"] = components[0]
-    out_dict = {"total":matches["total"], "civs_list":civ_dict.values()}
+    civ_list = utils.count_response_to_dict(matches)
+    out_dict = {"total":matches["total"], "civs_list":civ_list}
     content = JSONRenderer().render(out_dict)
     return HttpResponse(content)
 
 class OpeningWinRates(generics.ListAPIView):
   def list (self, request):
-    min_elo = int(request.GET.get('min_elo', "0").split(",")[0])
-    max_elo = int(request.GET.get('max_elo', "9999").split(",")[0])
-    exclude_mirrors = request.GET.get('exclude_mirrors', "False").split(",")[0].lower() == "true"
-    include_ladder_ids = list(map(int, request.GET.get('include_ladder_ids', "-1").split(",")))
-    include_patch_ids = list(map(int, request.GET.get('include_patch_ids', "-1").split(",")))
-    include_map_ids = list(map(int, request.GET.get('include_map_ids', "-1").split(",")))
-    include_civ_ids = list(map(int, request.GET.get('include_civ_ids', "-1").split(",")))
-    exclude_civ_ids = list(map(int, request.GET.get('exclude_civ_ids', "-1").split(",")))
-    clamp_civ_ids = list(map(int, request.GET.get('clamp_civ_ids', "-1").split(",")))
-    include_player_ids = list(map(int, request.GET.get('include_player_ids', "-1").split(",")))
+    data, error = utils.parse_standard_query_parameters(request, True)
+    if error:
+      HttpResponseBadRequest()
     aggregate_string = "Matches.objects"
-    aggregate_string += utils.generate_filter_statements_from_parameters(min_elo,
-                                                                         max_elo,
-                                                                         include_ladder_ids,
-                                                                         include_patch_ids,
-                                                                         include_map_ids,
-                                                                         include_civ_ids,
-                                                                         clamp_civ_ids,
-                                                                         include_player_ids);
-    aggregate_string += utils.generate_exclude_statements_from_parameters(exclude_mirrors,
-                                                                          exclude_civ_ids)
+    aggregate_string += utils.generate_filter_statements_from_parameters(data)
+    aggregate_string += utils.generate_exclude_statements_from_parameters(data)
     aggregate_string += utils.generate_aggregate_statements_from_basic_openings()
-    print (aggregate_string)
     matches = eval(aggregate_string)
     # convert counts to something more readable
-    opening_dict = {}
-    for key, value in matches.items():
-      # keys are of format opening_name_victoryType, so split into nested dict because nicer
-      # deal with total later
-      if key != 'total':
-        components = key.split("_")
-        opening_name = " ".join(components[:-1])
-        victory_type = components[-1]
-        if not opening_name in opening_dict:
-          opening_dict[opening_name] = {}
-        #sum key if already in dict (for mirrors)
-        opening_dict[opening_name][victory_type] = value
-        opening_dict[opening_name]["name"] = opening_name
-    out_dict = {"total":matches["total"], "openings_list":opening_dict.values()}
+    opening_list = utils.count_response_to_dict(matches)
+    out_dict = {"total":matches["total"], "openings_list":opening_list}
     content = JSONRenderer().render(out_dict)
     return HttpResponse(content)
 
 class OpeningMatchups(generics.ListAPIView):
   def list (self, request):
-    min_elo = int(request.GET.get('min_elo', "0").split(",")[0])
-    max_elo = int(request.GET.get('max_elo', "9999").split(",")[0])
-    exclude_mirrors = request.GET.get('exclude_mirrors', "False").split(",")[0].lower() == "true"
-    include_ladder_ids = list(map(int, request.GET.get('include_ladder_ids', "-1").split(",")))
-    include_patch_ids = list(map(int, request.GET.get('include_patch_ids', "-1").split(",")))
-    include_map_ids = list(map(int, request.GET.get('include_map_ids', "-1").split(",")))
-    include_civ_ids = list(map(int, request.GET.get('include_civ_ids', "-1").split(",")))
-    exclude_civ_ids = list(map(int, request.GET.get('exclude_civ_ids', "-1").split(",")))
-    clamp_civ_ids = list(map(int, request.GET.get('clamp_civ_ids', "-1").split(",")))
-    include_player_ids = list(map(int, request.GET.get('include_player_ids', "-1").split(",")))
+    data, error = utils.parse_standard_query_parameters(request, True)
+    if error:
+      HttpResponseBadRequest()
     aggregate_string = "Matches.objects"
-    aggregate_string += utils.generate_filter_statements_from_parameters(min_elo,
-                                                                         max_elo,
-                                                                         include_ladder_ids,
-                                                                         include_patch_ids,
-                                                                         include_map_ids,
-                                                                         include_civ_ids,
-                                                                         clamp_civ_ids,
-                                                                         include_player_ids);
-    aggregate_string += utils.generate_exclude_statements_from_parameters(exclude_mirrors,
-                                                                          exclude_civ_ids)
+    aggregate_string += utils.generate_filter_statements_from_parameters(data)
+    aggregate_string += utils.generate_exclude_statements_from_parameters(data)
     aggregate_string += utils.generate_aggregate_statements_from_opening_matchups()
-    print (aggregate_string)
     matches = eval(aggregate_string)
     # convert counts to something more readable
-    opening_dict = {}
-    for key, value in matches.items():
-      # keys are of format opening_name_victoryType, so split into nested dict because nicer
-      # deal with total later
-      if key != 'total':
-        components = key.split("_")
-        opening_name = " ".join(components[:-1])
-        victory_type = components[-1]
-        if not opening_name in opening_dict:
-          opening_dict[opening_name] = {}
-        #sum key if already in dict (for mirrors)
-        opening_dict[opening_name][victory_type] = value
-        opening_dict[opening_name]["name"] = opening_name
-    out_dict = {"total":matches["total"], "openings_list":opening_dict.values()}
+    opening_list = utils.count_response_to_dict(matches)
+    # mirror the matchups
+    utils.mirror_vs_dict_names(opening_list)
+    out_dict = {"total":matches["total"], "openings_list":opening_list}
     content = JSONRenderer().render(out_dict)
     return HttpResponse(content)

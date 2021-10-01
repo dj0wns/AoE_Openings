@@ -97,6 +97,57 @@ Followups = [
 ]
 
 
+def parse_standard_query_parameters(request, default_exclude_mirrors) :
+  data = {}
+  error_code = False
+  data['min_elo'] = int(request.GET.get('min_elo', "0").split(",")[0])
+  data['max_elo'] = int(request.GET.get('max_elo', "9999").split(",")[0])
+  data['exclude_mirrors'] = request.GET.get('exclude_mirrors', str(default_exclude_mirrors)).split(",")[0].lower() == "true"
+  data['include_ladder_ids'] = list(map(int, request.GET.get('include_ladder_ids', "-1").split(",")))
+  data['include_patch_ids'] = list(map(int, request.GET.get('include_patch_ids', "-1").split(",")))
+  data['include_map_ids'] = list(map(int, request.GET.get('include_map_ids', "-1").split(",")))
+  data['include_civ_ids'] = list(map(int, request.GET.get('include_civ_ids', "-1").split(",")))
+  data['exclude_civ_ids'] = list(map(int, request.GET.get('exclude_civ_ids', "-1").split(",")))
+  data['clamp_civ_ids'] = list(map(int, request.GET.get('clamp_civ_ids', "-1").split(",")))
+  data['include_player_ids'] = list(map(int, request.GET.get('include_player_ids', "-1").split(",")))
+
+  #Now validate data
+  if data['min_elo'] < 0 or data['min_elo'] > 9999 or data['min_elo'] % 25:
+    error_code = 400
+  if data['max_elo'] < 0 or data['max_elo'] > 9999 or data['max_elo'] % 25:
+    error_code = 400
+  #TODO Add more db level validations
+  return data, error_code
+
+def count_response_to_dict(sql_response) :
+  data = {}
+  for key, value in sql_response.items():
+    # keys are of format civ_victoryType, so split into nested dict because nicer
+    # deal with total later
+    if key != 'total':
+      components = key.split("_")
+      name = " ".join(components[:-1])
+      type = components[-1]
+      if not name in data:
+        data[name] = {}
+      data[name][type] = value
+      data[name]["name"] = name
+  return list(data.values())
+
+#When doing versus matches we only calculate each matchup once, so mirror matchups to make it easier to view for the end user
+def mirror_vs_dict_names(data_list) :
+  for i in range(len(data_list)):
+    dict2 = data_list[i].copy() #make copy of the current dict, change name and reinsert
+    old_name = data_list[i]['name']
+    #split on vs
+    components = old_name.split("vs")
+    name1 = " ".join(filter(None, components[0].split(" "))) #handy trick to fix formatting
+    name2 = " ".join(filter(None, components[1].split(" "))) #handy trick to fix formatting
+    if name1 == name2: #dont duplicate mirrors
+      continue
+    dict2['name'] = name2 + ' vs ' + name1
+    data_list.append(dict2)
+
 def opening_query_string(inclusions, exclusions, player, predicate):
   #inclusions
   aggregate_string='('
@@ -137,8 +188,8 @@ def opening_query_string(inclusions, exclusions, player, predicate):
 
 def generate_aggregate_statements_from_basic_openings():
   aggregate_string = '.aggregate(total=Count("id"),'
-  predicate_titles = [ "_total", "_wins", "_losses"]
-  predicates = ["", "player{}_victory=1", "player{}_victory=0"]
+  predicate_titles = [ "_total", "_wins"]
+  predicates = ["", "player{}_victory=1"]
   strategies = Basic_Strategies + Followups;
   for opening in strategies:
     if not len(opening[2]):
@@ -171,13 +222,15 @@ def generate_aggregate_statements_from_basic_openings():
 
 def generate_aggregate_statements_from_opening_matchups():
   aggregate_string = '.aggregate(total=Count("id"),'
-  predicate_titles = [ "_total", "_wins", "_losses"]
-  predicates = ["", "player{}_victory=1", "player{}_victory=0"]
+  predicate_titles = [ "_total", "_wins"]
+  predicates = ["", "player{}_victory=1"]
   strategies = Basic_Strategies;
-  for opening1 in strategies:
+  for i in range(len(strategies)):
+    opening1 = strategies[i]
     if not len(opening1[2]):
       opening1[2].append(OpeningType.Unused.value) #Add unused flag to remove did nothing if no exclusions
-    for opening2 in strategies:
+    for j in range(i,len(strategies)):
+      opening2 = strategies[j]
       if not len(opening2[2]):
         opening2[2].append(OpeningType.Unused.value) #Add unused flag to remove did nothing if no exclusions
       for predicate in range(len(predicates)):
@@ -201,101 +254,91 @@ def generate_aggregate_statements_from_opening_matchups():
   aggregate_string+=')'
   return aggregate_string
 
-
-
-def generate_filter_statements_from_parameters(min_elo,
-                                               max_elo,
-                                               include_ladder_ids,
-                                               include_patch_ids,
-                                               include_map_ids,
-                                               include_civ_ids,
-                                               clamp_civ_ids,
-                                               include_player_ids):
+def generate_filter_statements_from_parameters(data):
     filter_string = ".filter("
 
-    if len(include_ladder_ids) and include_ladder_ids[0] != -1:
+    if len(data['include_ladder_ids']) and data['include_ladder_ids'][0] != -1:
         count = 0
-        for ladder_id in include_ladder_ids:
-            if count >0 and count < len(include_ladder_ids):
+        for ladder_id in data['include_ladder_ids']:
+            if count >0 and count < len(data['include_ladder_ids']):
                 filter_string += ' | '
             filter_string += f'Q(ladder_id={ladder_id})'
             count += 1
         filter_string += ","
 
-    if len(include_patch_ids) and include_patch_ids[0] != -1:
+    if len(data['include_patch_ids']) and data['include_patch_ids'][0] != -1:
         count = 0
-        for patch_id in include_patch_ids:
-            if count >0 and count < len(include_patch_ids):
+        for patch_id in data['include_patch_ids']:
+            if count >0 and count < len(data['include_patch_ids']):
                 filter_string += ' | '
             filter_string += f'Q(patch_number={patch_id})'
             count += 1
         filter_string += ","
 
-    if len(include_map_ids) and include_map_ids[0] != -1:
+    if len(data['include_map_ids']) and data['include_map_ids'][0] != -1:
         count = 0
-        for map_id in include_map_ids:
-            if count >0 and count < len(include_map_ids):
+        for map_id in data['include_map_ids']:
+            if count >0 and count < len(data['include_map_ids']):
                 filter_string += ' | '
             filter_string += f'Q(map_id={map_id})'
             count += 1
         filter_string += ","
 
-    if len(include_civ_ids) and include_civ_ids[0] != -1:
+    if len(data['include_civ_ids']) and data['include_civ_ids'][0] != -1:
         count = 0
-        for civ_id in include_civ_ids:
-            if count >0 and count < len(include_civ_ids):
+        for civ_id in data['include_civ_ids']:
+            if count >0 and count < len(data['include_civ_ids']):
                 filter_string += ' | '
             filter_string += f'Q(player1_civilization={civ_id}) | Q(player2_civilization={civ_id})'
             count += 1
         filter_string += ","
 
-    if len(clamp_civ_ids) and clamp_civ_ids[0] != -1:
+    if len(data['clamp_civ_ids']) and data['clamp_civ_ids'][0] != -1:
         filter_string += "(("
         count = 0
-        for civ_id in clamp_civ_ids:
-            if count >0 and count < len(clamp_civ_ids):
+        for civ_id in data['clamp_civ_ids']:
+            if count >0 and count < len(data['clamp_civ_ids']):
                 filter_string += ' | '
             filter_string += f'Q(player1_civilization={civ_id})'
             count += 1
         filter_string += ") & ("
         count = 0
-        for civ_id in clamp_civ_ids:
-            if count >0 and count < len(clamp_civ_ids):
+        for civ_id in data['clamp_civ_ids']:
+            if count >0 and count < len(data['clamp_civ_ids']):
                 filter_string += ' | '
             filter_string += f'Q(player2_civilization={civ_id})'
             count += 1
         filter_string += "))"
         filter_string += ","
 
-    if len(include_player_ids) and include_player_ids[0] != -1:
+    if len(data['include_player_ids']) and data['include_player_ids'][0] != -1:
         count = 0
-        for player_id in include_player_ids:
-            if count >0 and count < len(include_player_ids):
+        for player_id in data['include_player_ids']:
+            if count >0 and count < len(data['include_player_ids']):
                 filter_string += ' | '
             filter_string += f'Q(player1_id={player_id}) | Q(player2_id={player_id})'
             count += 1
         filter_string += ","
 
-    filter_string += f'average_elo__gte={min_elo},'
-    filter_string += f'average_elo__lte={max_elo}'
+    filter_string += f'average_elo__gte={data["min_elo"]},'
+    filter_string += f'average_elo__lte={data["max_elo"]}'
     filter_string += ')'
     return filter_string
 
-def generate_exclude_statements_from_parameters(no_mirror,
-                                               exclude_civ_ids):
+def generate_exclude_statements_from_parameters(data):
     exclusions = False
     filter_string = ""
 
 
-    if len(exclude_civ_ids) and exclude_civ_ids[0] != -1:
+    if len(data['exclude_civ_ids']) and data['exclude_civ_ids'][0] != -1:
         exclusions = True
         count = 0
-        for civ_id in exclude_civ_ids:
+        for civ_id in data['exclude_civ_ids']:
             filter_string += f'.exclude(player1_civilization={civ_id})'
             filter_string += f'.exclude(player2_civilization={civ_id})'
             count += 1
 
-    if no_mirror:
+    if data['exclude_mirrors']:
         exclusions = True
         filter_string += '.exclude(player1_civilization=F("player2_civilization"))'
     return filter_string if exclusions else ""
