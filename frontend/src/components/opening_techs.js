@@ -16,7 +16,7 @@ class OpeningTechs extends Component {
     this.query_params = this.props.location.search;
   }
   componentDidMount() {
-    fetch('http://127.0.0.1:8000/api/v1/opening_techs/'.concat(this.props.location.search))
+    fetch('/api/v1/opening_techs/'.concat(this.props.location.search))
      .then(res => res.json())
      .then((data) => {
        // Filter out openings with 0 matches
@@ -33,7 +33,7 @@ class OpeningTechs extends Component {
       query_string += '&';
     }
     this.setState({ openings: [] })
-    fetch('http://127.0.0.1:8000/api/v1/opening_techs/'.concat(query_string))
+    fetch('/api/v1/opening_techs/'.concat(query_string))
       .then(res => res.json())
       .then((data) => {
         // Filter out openings with 0 matches

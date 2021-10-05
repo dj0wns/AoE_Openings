@@ -15,7 +15,7 @@ class Civs extends Component {
     this.query_params = this.props.location.search;
   }
   componentDidMount() {
-    fetch('http://127.0.0.1:8000/api/v1/civ_win_rates/'.concat(this.props.location.search))
+    fetch('/api/v1/civ_win_rates/'.concat(this.props.location.search))
      .then(res => res.json())
      .then((data) => {
        data.civs_list = data.civs_list.filter(function(civ) {return civ.total > 0})
@@ -33,7 +33,7 @@ class Civs extends Component {
       query_string += '&';
     }
     this.setState({ civilizations: [] })
-    fetch('http://127.0.0.1:8000/api/v1/civ_win_rates/'.concat(query_string))
+    fetch('/api/v1/civ_win_rates/'.concat(query_string))
       .then(res => res.json())
       .then((data) => {
         data.civs_list = data.civs_list.filter(function(civ) {return civ.total > 0})

@@ -6,7 +6,7 @@ class MetaSnapshotChart extends React.Component {
     graph_data: []
   }
   componentDidMount() {
-    fetch('http://127.0.0.1:8000/api/v1/meta_snapshot/')
+    fetch('/api/v1/meta_snapshot/')
      .then(res => res.json())
      .then((data) => {
        var opening_data = [];
