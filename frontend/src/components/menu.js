@@ -1,7 +1,9 @@
 import React from 'react';
 import { Navbar, NavItem, NavDropdown, MenuItem, Nav, Form, FormControl, Button } from 'react-bootstrap';
+import {default_query} from "./utils";
 
 const Menu = () => {
+  var query = default_query();
   return (
     <div className="app tc f3">
       <Navbar bg="dark" variant="dark" expand='lg'>
@@ -9,9 +11,10 @@ const Menu = () => {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className='mr-auto'>
-            <Nav.Link href="/civ_stats">Civilization Stats</Nav.Link>
-            <Nav.Link href="/opening_stats">Opening Stats</Nav.Link>
-            <Nav.Link href="/opening_matchups">Opening Matchups</Nav.Link>
+            <Nav.Link href={"/civ_stats" + query}>Civilization Stats</Nav.Link>
+            <Nav.Link href={"/opening_stats" + query}>Opening Stats</Nav.Link>
+            <Nav.Link href={"/opening_matchups" + query}>Opening Matchups</Nav.Link>
+            <Nav.Link href={"/opening_techs" + query}>Opening Tech Timings</Nav.Link>
           </Nav>
         </Navbar.Collapse>
       </Navbar>

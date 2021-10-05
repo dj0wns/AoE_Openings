@@ -116,6 +116,15 @@ class Input extends Component {
     })
   }
 
+  componentDidUpdate(nextProps, prevState) {
+    // When component updates the first time, set initial values for input
+    // Make sure info table has been loaded before loading in args because we need to use their names
+    if (!this.initial_setup && this.state.info.maps.length) {
+      this.initial_setup = true
+      this.setInitialSelected()
+    }
+  }
+
   componentDidMount() {
     fetch('http://127.0.0.1:8000/api/v1/info/')
     .then(res => res.json())
@@ -261,11 +270,6 @@ class Input extends Component {
     });
   }
   render () {
-    // Make sure info table has been loaded before loading in args because we need to use their names
-    if (!this.initial_setup && this.state.info.maps.length) {
-      this.initial_setup = true
-      this.setInitialSelected()
-    }
     return (
       <div>
         <form onSubmit={this.handleSubmit}>
