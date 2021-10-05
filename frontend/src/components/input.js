@@ -3,7 +3,7 @@ import Multiselect from 'multiselect-react-dropdown';
 
 class Input extends Component {
   state = {
-    info: {civs:[], ladders:[], maps:[], patches:[]},
+    info: {civs:[], ladders:[], maps:[], patches:[], openings:[]},
     min_elo_value: 0,
     max_elo_value: 3000,
     exclude_mirrors: true,
@@ -13,6 +13,7 @@ class Input extends Component {
     include_civs: [],
     exclude_civs: [],
     clamp_civs: [],
+    include_openings: [],
 
   }
   constructor(props){
@@ -38,6 +39,8 @@ class Input extends Component {
     this.handle_exclude_civs_remove = this.handle_exclude_civs_remove.bind(this);
     this.handle_clamp_civs_add = this.handle_clamp_civs_add.bind(this);
     this.handle_clamp_civs_remove = this.handle_clamp_civs_remove.bind(this);
+    this.handle_include_openings_add = this.handle_include_openings_add.bind(this);
+    this.handle_include_openings_remove = this.handle_include_openings_remove.bind(this);
     this.handle_checkbox_change = this.handle_checkbox_change.bind(this);
     this.handle_change = this.handle_change.bind(this);
     this.search_params = new URLSearchParams(this.props.parent_query)
@@ -73,7 +76,7 @@ class Input extends Component {
       include_patch_ids = this.search_params.get('include_patch_ids').split(",").map(Number);
       include_patch_ids = this.formatArgumentsForMultiSelect(include_patch_ids, this.state.info.patches)
     }
-    var include_civ_ids = [];
+    var include_civ_ids = []
     if (this.search_params.get('include_civ_ids')){
       include_civ_ids = this.search_params.get('include_civ_ids').split(",").map(Number);
       include_civ_ids = this.formatArgumentsForMultiSelect(include_civ_ids, this.state.info.civs)
@@ -88,9 +91,12 @@ class Input extends Component {
       clamp_civ_ids = this.search_params.get('clamp_civ_ids').split(",").map(Number);
       clamp_civ_ids = this.formatArgumentsForMultiSelect(clamp_civ_ids, this.state.info.civs)
     }
+    var include_opening_ids = []
+    if (this.search_params.get('include_opening_ids')){
+      include_opening_ids = this.search_params.get('include_opening_ids').split(",").map(Number);
+      include_opening_ids = this.formatArgumentsForMultiSelect(include_opening_ids, this.state.info.openings)
+    }
     var exclude_mirrors = this.exclude_mirror_default;
-    console.log(exclude_mirrors)
-    console.log(this.exclude_mirror_default)
     if (this.search_params.get('exclude_mirrors') != null) {
       exclude_mirrors = this.search_params.get('exclude_mirrors')
     }
@@ -113,6 +119,7 @@ class Input extends Component {
         include_civs: include_civ_ids,
         exclude_civs: exclude_civ_ids,
         clamp_civs: clamp_civ_ids,
+        include_openings: include_opening_ids,
     })
   }
 
@@ -165,6 +172,9 @@ class Input extends Component {
     }
     if (this.state.clamp_civs.length) {
       data_dict['clamp_civ_ids'] = this.state.clamp_civs.map(item => {return item.id});
+    }
+    if (this.state.include_openings.length) {
+      data_dict['include_opening_ids'] = this.state.include_openings.map(item => {return item.id});
     }
     this.callback(data_dict);
   }
@@ -269,6 +279,19 @@ class Input extends Component {
       })
     });
   }
+  handle_include_openings_add(selectedList, selectedItem) {
+    let new_civs = this.state.include_openings.concat(selectedItem);
+    this.setState({
+      include_openings: new_civs
+    });
+  }
+  handle_include_openings_remove(selectedList, selectedItem) {
+    this.setState({
+      include_openings: this.state.include_openings.filter(function(opening) {
+        return opening !== selectedItem
+      })
+    });
+  }
   render () {
     return (
       <div>
@@ -343,6 +366,17 @@ class Input extends Component {
                            displayValue='name'
                            onSelect={this.handle_clamp_civs_add}
                            onRemove={this.handle_clamp_civs_remove}/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-check col-md-6">
+              <label for="include_openings">Include Openings</label>
+              <Multiselect name="include_openings"
+                           options={this.state.info.openings}
+                           selectedValues={this.state.include_openings}
+                           displayValue='name'
+                           onSelect={this.handle_include_openings_add}
+                           onRemove={this.handle_include_openings_remove}/>
             </div>
           </div>
           <button class="btn btn-primary" type="submit">Submit</button>

@@ -114,6 +114,7 @@ def parse_standard_query_parameters(request, default_exclude_mirrors) :
   data['include_civ_ids'] = list(map(int, request.GET.get('include_civ_ids', "-1").split(",")))
   data['exclude_civ_ids'] = list(map(int, request.GET.get('exclude_civ_ids', "-1").split(",")))
   data['clamp_civ_ids'] = list(map(int, request.GET.get('clamp_civ_ids', "-1").split(",")))
+  data['include_opening_ids'] = list(map(int, request.GET.get('include_opening_ids', "-1").split(",")))
   data['include_player_ids'] = list(map(int, request.GET.get('include_player_ids', "-1").split(",")))
 
   #Now validate data
@@ -160,7 +161,7 @@ def mirror_vs_dict_names(data_list) :
   for i in range(len(data_list)):
     dict2 = data_list[i].copy() #make copy of the current dict, change name and reinsert
     #switch win rate
-    if 'wins' in dict2:
+    if 'wins' in dict2 and 'total' in dict2 and dict2['wins'] is not None and dict2['total'] is not None:
       dict2['wins'] = dict2['total'] - data_list[i]['wins']
     print(data_list[i], dict2)
     old_name = data_list[i]['name']
@@ -213,6 +214,11 @@ def opening_query_string(inclusions, exclusions, player, predicate, table_prefix
     aggregate_string+=f'Q({predicate.format(player)})'
   return aggregate_string
 
+def opening_ids_to_openings_list(opening_ids) :
+  total_openings = Basic_Strategies + Followups
+  openings = [total_openings[i] for i in opening_ids]
+  return openings
+
 
 def generate_aggregate_statements_from_basic_openings():
   aggregate_string = '.aggregate(total=Count("id"),'
@@ -246,11 +252,15 @@ def generate_aggregate_statements_from_basic_openings():
   aggregate_string+=')'
   return aggregate_string
 
-def generate_aggregate_statements_from_opening_matchups():
+def generate_aggregate_statements_from_opening_matchups(data):
   aggregate_string = '.aggregate(total=Count("id"),'
   predicate_titles = [ "_total", "_wins"]
   predicates = ["", "player{}_victory=1"]
-  strategies = Basic_Strategies;
+  #If user defined openings, then use those, otherwise use the basics
+  if len(data['include_opening_ids']) and data['include_opening_ids'][0] != -1:
+    strategies = opening_ids_to_openings_list(data['include_opening_ids'])
+  else:
+    strategies = Basic_Strategies;
   for i in range(len(strategies)):
     opening1 = strategies[i]
     for j in range(i,len(strategies)):
@@ -276,7 +286,7 @@ def generate_aggregate_statements_from_opening_matchups():
   aggregate_string+=')'
   return aggregate_string
 
-def generate_filter_statements_from_parameters(data, table_prefix = ""):
+def generate_filter_statements_from_parameters(data, table_prefix = "", include_opening_ids = True):
     filter_string = ".filter("
 
     if len(data['include_ladder_ids']) and data['include_ladder_ids'][0] != -1:
@@ -332,6 +342,21 @@ def generate_filter_statements_from_parameters(data, table_prefix = ""):
             count += 1
         filter_string += "))"
         filter_string += ","
+
+    if include_opening_ids and len(data['include_opening_ids']) and data['include_opening_ids'][0] != -1:
+        openings_list = Basic_Strategies + Followups
+        count = 0
+        for opening_id in data['include_opening_ids']:
+            # player 1 or player 2 must match the opening
+            if count >0 and count < len(data['include_opening_ids']):
+                filter_string += ' | '
+            filter_string += ' ( '
+            filter_string += opening_query_string(openings_list[opening_id][1], openings_list[opening_id][2], 1 , "")
+            filter_string += ' | '
+            filter_string += opening_query_string(openings_list[opening_id][1], openings_list[opening_id][2], 2 , "")
+            filter_string += ' ) '
+            count += 1
+        filter_string += ','
 
     if len(data['include_player_ids']) and data['include_player_ids'][0] != -1:
         count = 0

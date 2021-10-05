@@ -27,6 +27,7 @@ class OpeningNames(generics.ListAPIView):
     return HttpResponse(content)
 
 class Info(generics.ListAPIView):
+  #TODO store this data in the db when possible
   def list (self, request):
     ret_dict = {}
     civ_list = []
@@ -47,9 +48,14 @@ class Info(generics.ListAPIView):
 
     for name, value in aoe_data["civ_names"].items():
       civ_list.append({"name":name, "id":int(value) - 10270})
+
+    openings = utils.Basic_Strategies + utils.Followups
+    opening_list = [{'name':openings[i][0].replace('_',' '), 'id':i} for i in range(len(openings))]
+
     ret_dict["civs"] = civ_list
     ret_dict["ladders"] = ladder_list
     ret_dict["maps"] = map_list
+    ret_dict["openings"] = opening_list
     content = JSONRenderer().render(ret_dict)
     return HttpResponse(content)
 
@@ -84,7 +90,7 @@ class OpeningWinRates(generics.ListAPIView):
     if error:
       HttpResponseBadRequest()
     aggregate_string = "Matches.objects"
-    aggregate_string += utils.generate_filter_statements_from_parameters(data)
+    aggregate_string += utils.generate_filter_statements_from_parameters(data, include_opening_ids = False)
     aggregate_string += utils.generate_exclude_statements_from_parameters(data)
     aggregate_string += utils.generate_aggregate_statements_from_basic_openings()
     matches = eval(aggregate_string)
@@ -100,9 +106,10 @@ class OpeningMatchups(generics.ListAPIView):
     if error:
       HttpResponseBadRequest()
     aggregate_string = "Matches.objects"
-    aggregate_string += utils.generate_filter_statements_from_parameters(data)
+    aggregate_string += utils.generate_filter_statements_from_parameters(data, include_opening_ids = False)
     aggregate_string += utils.generate_exclude_statements_from_parameters(data)
-    aggregate_string += utils.generate_aggregate_statements_from_opening_matchups()
+    aggregate_string += utils.generate_aggregate_statements_from_opening_matchups(data)
+    print(aggregate_string)
     matches = eval(aggregate_string)
     # convert counts to something more readable
     opening_list = utils.count_response_to_dict(matches)
@@ -161,7 +168,7 @@ class OpeningTechs(generics.ListAPIView):
     if error:
       HttpResponseBadRequest()
     aggregate_string = "MatchPlayerActions.objects.select_related('match')"
-    aggregate_string += utils.generate_filter_statements_from_parameters(data, 'match__')
+    aggregate_string += utils.generate_filter_statements_from_parameters(data, 'match__', include_opening_ids = False)
     aggregate_string += '.filter(event_type=3)' #Tech events only
     aggregate_string += '.filter(' #filter on only the tech ids we want
     for i in range(len(tech_ids)):
