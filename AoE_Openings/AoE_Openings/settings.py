@@ -107,18 +107,18 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-#CACHES = {
-#  'default': {
-#    'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-#    'LOCATION': 'cache_table',
-#    'TIMEOUT' : 30, #6 hours, maybe increase further
-#    'OPTIONS' : {
-#      'MAX_ENTRIES': 2000
-#    }
-#  }
-#}
-#
-#CACHE_MIDDLEWARE_SECONDS = 30 #6 hours, maybe increase further
+CACHES = {
+  'default': {
+    'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+    'LOCATION': 'cache_table',
+    'TIMEOUT' : 21600, #6 hours, maybe increase further
+    'OPTIONS' : {
+      'MAX_ENTRIES': 2000
+    }
+  }
+}
+
+CACHE_MIDDLEWARE_SECONDS = 21600 #6 hours, maybe increase further
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
