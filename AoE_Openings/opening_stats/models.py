@@ -116,3 +116,24 @@ class Players(models.Model):
 
     class Meta:
         db_table = 'players'
+
+#const table for storing specific tech names and ids
+class Techs(models.Model):
+  name = models.TextField()
+
+  class Meta:
+    db_table = 'techs'
+
+#const table for storing specific map names and ids
+class Maps(models.Model):
+  name = models.TextField()
+
+  class Meta:
+    db_table = 'maps'
+
+#const table for storing specific ladder names and ids
+class Ladders(models.Model):
+  name = models.TextField()
+
+  class Meta:
+    db_table = 'ladders'

@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.db.models import F, Count, Case, When, Q, Sum, Avg, Value
 from rest_framework import generics
 from rest_framework.renderers import JSONRenderer
-from opening_stats.models import Openings, Matches, MatchPlayerActions
+from opening_stats.models import Openings, Matches, MatchPlayerActions, Maps, Techs, Ladders
 from opening_stats.serializers import OpeningsSerializer
 from . import utils
 import os
@@ -31,14 +31,6 @@ class Info(generics.ListAPIView):
   def list (self, request):
     ret_dict = {}
     civ_list = []
-    ladder_list = [
-      {'name':"Random Map 1v1", 'id':"3"},
-      {'name':"Empire Wars 1v1", 'id':"13"},
-    ]
-    map_list = [
-      {'name':"Arabia", 'id':"9"},
-      {'name':"Arena", 'id':"29"},
-    ]
     patches = Matches.objects.values('patch_number').distinct()
     patch_list = []
     for patch in patches:
@@ -53,8 +45,9 @@ class Info(generics.ListAPIView):
     opening_list = [{'name':openings[i][0].replace('_',' '), 'id':i} for i in range(len(openings))]
 
     ret_dict["civs"] = civ_list
-    ret_dict["ladders"] = ladder_list
-    ret_dict["maps"] = map_list
+    ret_dict["ladders"] = Ladders.objects.order_by('name').values()
+    ret_dict["maps"] = Maps.objects.order_by('name').values()
+    ret_dict["techs"] = Techs.objects.order_by('name').values()
     ret_dict["openings"] = opening_list
     content = JSONRenderer().render(ret_dict)
     return HttpResponse(content)
@@ -63,7 +56,7 @@ class CivWinRates(generics.ListAPIView):
   def list (self, request):
     data, error = utils.parse_standard_query_parameters(request, True)
     if error:
-      HttpResponseBadRequest()
+      return HttpResponseBadRequest()
     aggregate_string = "Matches.objects"
     aggregate_string += utils.generate_filter_statements_from_parameters(data)
     aggregate_string += utils.generate_exclude_statements_from_parameters(data)
@@ -88,7 +81,7 @@ class OpeningWinRates(generics.ListAPIView):
   def list (self, request):
     data, error = utils.parse_standard_query_parameters(request, True)
     if error:
-      HttpResponseBadRequest()
+      return HttpResponseBadRequest()
     aggregate_string = "Matches.objects"
     aggregate_string += utils.generate_filter_statements_from_parameters(data, include_opening_ids = False)
     aggregate_string += utils.generate_exclude_statements_from_parameters(data)
@@ -104,12 +97,11 @@ class OpeningMatchups(generics.ListAPIView):
   def list (self, request):
     data, error = utils.parse_standard_query_parameters(request, True)
     if error:
-      HttpResponseBadRequest()
+      return HttpResponseBadRequest()
     aggregate_string = "Matches.objects"
     aggregate_string += utils.generate_filter_statements_from_parameters(data, include_opening_ids = False)
     aggregate_string += utils.generate_exclude_statements_from_parameters(data)
     aggregate_string += utils.generate_aggregate_statements_from_opening_matchups(data)
-    print(aggregate_string)
     matches = eval(aggregate_string)
     # convert counts to something more readable
     opening_list = utils.count_response_to_dict(matches)
@@ -125,7 +117,7 @@ class MetaSnapshot(generics.ListAPIView):
     max_elo = 2500
     bucket_size = int(request.GET.get('bucket_size', "100").split(",")[0])
     if bucket_size < 50 or bucket_size > 200:
-      HttpResponseBadRequest()
+      return HttpResponseBadRequest()
     aggregate_string = "Matches.objects"
     #TODO FILTER BY NEWEST PATCH
     current_patch = 53347
@@ -154,7 +146,6 @@ class MetaSnapshot(generics.ListAPIView):
         aggregate_string += ",then=1)"
         aggregate_string += "))," #close Sum(Case(
     aggregate_string += ')' #close aggregate
-    print(aggregate_string)
     matches = eval(aggregate_string)
     meta_list = utils.count_response_to_dict(matches)
     content = JSONRenderer().render(meta_list)
@@ -162,11 +153,33 @@ class MetaSnapshot(generics.ListAPIView):
 
 class OpeningTechs(generics.ListAPIView):
   def list (self, request):
-    #TODO Make this a query argument
-    tech_ids = [101, 102, 103]
     data, error = utils.parse_standard_query_parameters(request, True)
     if error:
-      HttpResponseBadRequest()
+      return HttpResponseBadRequest()
+
+    #pull tech ids from query arg or default to age up times
+    if len(data['include_tech_ids']) and data['include_tech_ids'][0] != -1:
+      tech_ids = data['include_tech_ids']
+    else:
+      tech_ids = [101, 102, 103]
+    #pull strategies from query arg or default to basic
+    if len(data['include_opening_ids']) and data['include_opening_ids'][0] != -1:
+      strategies = utils.opening_ids_to_openings_list(data['include_opening_ids'])
+    else:
+      strategies = utils.Basic_Strategies;
+
+    #get tech names, fall back to data sheet if needed
+    tech_ids_to_names = {}
+    for i in tech_ids:
+      tech = Techs.objects.get(pk=i)
+      if tech:
+        tech_ids_to_names[i] = tech.name.replace(' ', '_') #remove spaces so its a valid variable name
+      elif i in aoe_data["data"]["techs"]:
+        tech_ids_to_names[i] = aoe_data["data"]["techs"][str(i)]["internal_name"].replace(' ', '_')
+      else:
+        #unknown tech, error out
+        return HttpResponseBadRequest()
+
     aggregate_string = "MatchPlayerActions.objects.select_related('match')"
     aggregate_string += utils.generate_filter_statements_from_parameters(data, 'match__', include_opening_ids = False)
     aggregate_string += '.filter(event_type=3)' #Tech events only
@@ -179,14 +192,8 @@ class OpeningTechs(generics.ListAPIView):
     aggregate_string += utils.generate_exclude_statements_from_parameters(data, 'match__')
     aggregate_string += '.aggregate(total=Count("match", distinct=True),' #Get a count of games
     for i in tech_ids:
-      tech_name = ""
-      if i in utils.Updated_Tech_Names:
-        tech_name = utils.Updated_Tech_Names[i]
-      else:
-        tech_name += aoe_data["data"]["techs"][str(i)]["internal_name"]
-      tech_name = tech_name.replace(' ', '_') #remove spaces so its a valid variable name
-      for strat in utils.Basic_Strategies:
-        aggregate_string += f'{strat[0]}__{tech_name}__{i}=Avg(Case('
+      for strat in strategies:
+        aggregate_string += f'{strat[0]}__{tech_ids_to_names[i]}__{i}=Avg(Case('
         # p1
         aggregate_string += "When("
         aggregate_string += utils.opening_query_string(strat[1], strat[2], 1, "", 'match__')
@@ -201,7 +208,6 @@ class OpeningTechs(generics.ListAPIView):
         aggregate_string += ",then='time')"
         aggregate_string += "))," #close Avg(Case(
     aggregate_string += ')' #close aggregate
-    print(aggregate_string)
     #aggregate_string += utils.generate_aggregate_statements_from_opening_matchups()
     matches = eval(aggregate_string)
     opening_list = utils.count_tech_response_to_dict(matches, aoe_data)

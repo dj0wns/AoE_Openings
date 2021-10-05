@@ -106,7 +106,7 @@ def parse_standard_query_parameters(request, default_exclude_mirrors) :
   data = {}
   error_code = False
   data['min_elo'] = int(request.GET.get('min_elo', "0").split(",")[0])
-  data['max_elo'] = int(request.GET.get('max_elo', "9999").split(",")[0])
+  data['max_elo'] = int(request.GET.get('max_elo', "9000").split(",")[0])
   data['exclude_mirrors'] = request.GET.get('exclude_mirrors', str(default_exclude_mirrors)).split(",")[0].lower() == "true"
   data['include_ladder_ids'] = list(map(int, request.GET.get('include_ladder_ids', "-1").split(",")))
   data['include_patch_ids'] = list(map(int, request.GET.get('include_patch_ids', "-1").split(",")))
@@ -115,12 +115,13 @@ def parse_standard_query_parameters(request, default_exclude_mirrors) :
   data['exclude_civ_ids'] = list(map(int, request.GET.get('exclude_civ_ids', "-1").split(",")))
   data['clamp_civ_ids'] = list(map(int, request.GET.get('clamp_civ_ids', "-1").split(",")))
   data['include_opening_ids'] = list(map(int, request.GET.get('include_opening_ids', "-1").split(",")))
+  data['include_tech_ids'] = list(map(int, request.GET.get('include_tech_ids', "-1").split(",")))
   data['include_player_ids'] = list(map(int, request.GET.get('include_player_ids', "-1").split(",")))
 
   #Now validate data
-  if data['min_elo'] < 0 or data['min_elo'] > 9999 or data['min_elo'] % 25:
+  if data['min_elo'] < 0 or data['min_elo'] > 9000 or data['min_elo'] % 25:
     error_code = 400
-  if data['max_elo'] < 0 or data['max_elo'] > 9999 or data['max_elo'] % 25:
+  if data['max_elo'] < 0 or data['max_elo'] > 9000 or data['max_elo'] % 25:
     error_code = 400
   #TODO Add more db level validations
   return data, error_code
