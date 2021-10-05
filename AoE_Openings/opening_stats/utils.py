@@ -159,6 +159,10 @@ def count_tech_response_to_dict(sql_response, aoe_data) :
 def mirror_vs_dict_names(data_list) :
   for i in range(len(data_list)):
     dict2 = data_list[i].copy() #make copy of the current dict, change name and reinsert
+    #switch win rate
+    if 'wins' in dict2:
+      dict2['wins'] = dict2['total'] - data_list[i]['wins']
+    print(data_list[i], dict2)
     old_name = data_list[i]['name']
     #split on vs
     components = old_name.split("vs")
