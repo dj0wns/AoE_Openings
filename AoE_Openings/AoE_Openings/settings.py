@@ -25,7 +25,9 @@ SECRET_KEY = 'FAKE_SECRET_KEY'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'www.aoepulse.com'
+]
 
 
 # Application definition
@@ -105,18 +107,18 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-CACHES = {
-  'default': {
-    'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-    'LOCATION': 'cache_table',
-    'TIMEOUT' : 21600, #6 hours, maybe increase further
-    'OPTIONS' : {
-      'MAX_ENTRIES': 2000
-    }
-  }
-}
-
-CACHE_MIDDLEWARE_SECONDS = 21600 #6 hours, maybe increase further
+#CACHES = {
+#  'default': {
+#    'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+#    'LOCATION': 'cache_table',
+#    'TIMEOUT' : 30, #6 hours, maybe increase further
+#    'OPTIONS' : {
+#      'MAX_ENTRIES': 2000
+#    }
+#  }
+#}
+#
+#CACHE_MIDDLEWARE_SECONDS = 30 #6 hours, maybe increase further
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
