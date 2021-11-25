@@ -1,4 +1,12 @@
+import time
+import math
+
 from .AoE_Rec_Opening_Analysis.aoe_replay_stats import OpeningType
+from opening_stats.models import Matches, Techs, MatchPlayerActions, CivEloWins, OpeningEloWins, OpeningEloTechs
+
+ELO_DELTA = 50
+
+TIME_BUCKET_DELTA = 25000 #millis
 
 Updated_Tech_Names = {
   101:'Feudal Age',
@@ -31,22 +39,6 @@ Basic_Strategies = [
             OpeningType.FeudalSkirmOpening.value
         ], []
     ],
-    #[
-    #    "Fast_Castle",
-    #    [OpeningType.FastCastle.value],
-    #    [
-    #      OpeningType.AnyDrush.value,
-    #      OpeningType.FeudalScoutOpening.value,
-    #      OpeningType.FeudalArcherOpening.value,
-    #      OpeningType.FeudalSkirmOpening.value,
-    #      OpeningType.Maa.value
-    #    ]
-    #],
-    #[
-    #    "Did_Nothing",
-    #    [OpeningType.Unused.value],
-    #    [OpeningType.Unknown.value]
-    #],
 ]
 
 Followups = [
@@ -101,6 +93,7 @@ Followups = [
     ],
 ]
 
+OPENINGS = Basic_Strategies + Followups
 
 def parse_standard_query_parameters(request, default_exclude_mirrors) :
   data = {}
@@ -153,7 +146,7 @@ def count_tech_response_to_dict(sql_response, aoe_data) :
       tech_id = components[2].replace('_',' ')
       if not name in data:
         data[name] = {}
-      data[name][type] = value  + int(aoe_data["data"]["techs"][str(tech_id)]["ResearchTime"]) * 1000 if value is not None else value
+      data[name][type] = value  + Techs.objects.filter(id=tech_id).first().duration * 1000 if value is not None else value
       data[name]["name"] = name
   return list(data.values())
 
@@ -253,6 +246,26 @@ def generate_aggregate_statements_from_basic_openings():
   aggregate_string+=')'
   return aggregate_string
 
+def generate_aggregate_statements_from_basic_openings_new():
+  #Have to compare counts against basic strategies to enforce uniqueness
+  aggregate_string = f'.aggregate(total=Sum(Case(When(Q(opening1_id__lt={len(Basic_Strategies)}) & Q(opening2_id__lt={len(Basic_Strategies)}), then=F("opening1_victory_count") + F("opening1_loss_count")))),'
+  strategies = Basic_Strategies + Followups
+  opening_id = 0
+  for opening in strategies:
+      aggregate_string+=f'{opening[0]}_total=Sum(Case('
+      aggregate_string+=f'When(Q(opening1_id={opening_id}) & Q(opening2_id__lt={len(Basic_Strategies)}), then=F("opening1_victory_count") + F("opening1_loss_count")),'
+      aggregate_string+=f'When(Q(opening2_id={opening_id}) & Q(opening1_id__lt={len(Basic_Strategies)}), then=F("opening2_victory_count") + F("opening2_loss_count")))),'
+
+      aggregate_string+=f'{opening[0]}_wins=Sum(Case('
+      aggregate_string+=f'When(Q(opening1_id={opening_id}) & Q(opening2_id__lt={len(Basic_Strategies)}), then=F("opening1_victory_count")),'
+      aggregate_string+=f'When(Q(opening2_id={opening_id}) & Q(opening1_id__lt={len(Basic_Strategies)}), then=F("opening2_victory_count")))),'
+
+
+      opening_id += 1
+  #close aggregate
+  aggregate_string+=')'
+  return aggregate_string
+
 def generate_aggregate_statements_from_opening_matchups(data):
   aggregate_string = '.aggregate(total=Count("id"),'
   predicate_titles = [ "_total", "_wins"]
@@ -283,6 +296,35 @@ def generate_aggregate_statements_from_opening_matchups(data):
         #if a mirror match only get the total then dip
         if opening1==opening2:
           break
+  #close aggregate
+  aggregate_string+=')'
+  return aggregate_string
+
+def generate_aggregate_statements_from_opening_matchups_new(data):
+  aggregate_string = f'.aggregate(total=Sum(Case(When(Q(opening1_id__lt={len(Basic_Strategies)}) & Q(opening2_id__lt={len(Basic_Strategies)}), then=F("opening1_victory_count") + F("opening1_loss_count")))),'
+  #If user defined openings, then use those, otherwise use the basics
+  if len(data['include_opening_ids']) and data['include_opening_ids'][0] != -1:
+    strategies = data['include_opening_ids']
+  else:
+    strategies = range(len(Basic_Strategies));
+  for i in strategies:
+    opening1_name = OPENINGS[i][0]
+    for j in strategies[i:]:
+      opening2_name = OPENINGS[j][0]
+      aggregate_string+=f'{opening1_name}_vs_{opening2_name}_total=Sum(Case('
+      aggregate_string+=f'When(Q(opening1_id={i}) & Q(opening2_id={j}), then=F("opening1_victory_count") + F("opening1_loss_count")),'
+      if i != j:
+        aggregate_string+=f'When(Q(opening2_id={i}) & Q(opening1_id={j}), then=F("opening2_victory_count") + F("opening2_loss_count")))),'
+      else:
+        aggregate_string+=')),'
+
+      aggregate_string+=f'{opening1_name}_vs_{opening2_name}_wins=Sum(Case('
+      aggregate_string+=f'When(Q(opening1_id={i}) & Q(opening2_id={j}), then=F("opening1_victory_count")),'
+      if i != j:
+        aggregate_string+=f'When(Q(opening2_id={i}) & Q(opening1_id={j}), then=F("opening2_victory_count")))),'
+      else:
+        aggregate_string+=')),'
+
   #close aggregate
   aggregate_string+=')'
   return aggregate_string
@@ -373,6 +415,41 @@ def generate_filter_statements_from_parameters(data, table_prefix = "", include_
     filter_string += ')'
     return filter_string
 
+def generate_filter_statements_from_parameters_for_civ_elo_wins(data, table_prefix = "", include_opening_ids = True):
+    filter_string = ".filter("
+
+    if len(data['include_ladder_ids']) and data['include_ladder_ids'][0] != -1:
+        count = 0
+        for ladder_id in data['include_ladder_ids']:
+            if count >0 and count < len(data['include_ladder_ids']):
+                filter_string += ' | '
+            filter_string += f'Q({table_prefix}ladder_id={ladder_id})'
+            count += 1
+        filter_string += ","
+
+    if len(data['include_patch_ids']) and data['include_patch_ids'][0] != -1:
+        count = 0
+        for patch_id in data['include_patch_ids']:
+            if count >0 and count < len(data['include_patch_ids']):
+                filter_string += ' | '
+            filter_string += f'Q({table_prefix}patch_number={patch_id})'
+            count += 1
+        filter_string += ","
+
+    if len(data['include_map_ids']) and data['include_map_ids'][0] != -1:
+        count = 0
+        for map_id in data['include_map_ids']:
+            if count >0 and count < len(data['include_map_ids']):
+                filter_string += ' | '
+            filter_string += f'Q({table_prefix}map_id={map_id})'
+            count += 1
+        filter_string += ","
+
+    filter_string += f'{table_prefix}elo__gte={data["min_elo"]},'
+    filter_string += f'{table_prefix}elo__lte={data["max_elo"]}'
+    filter_string += ')'
+    return filter_string
+
 def generate_exclude_statements_from_parameters(data, table_prefix = ""):
     exclusions = False
     filter_string = ""
@@ -390,3 +467,317 @@ def generate_exclude_statements_from_parameters(data, table_prefix = ""):
         exclusions = True
         filter_string += f'.exclude({table_prefix}player1_civilization=F("{table_prefix}player2_civilization"))'
     return filter_string if exclusions else ""
+
+def update_intermediary_tables():
+  build_civ_elo_wins()
+  build_opening_elo_wins()
+  build_opening_elo_techs()
+
+# Run this function to build the civ elo wins table for quicker lookups
+def build_civ_elo_wins():
+    start = time.time()
+    # drop all records and rebuild
+    CivEloWins.objects.all().delete()
+
+    #Use tuples as key to store data in the interim
+    # (civ_id,map_id,ladder_id,patch_number,elo) ... ["victory_count", "loss_count"]
+    data_dict = {}
+
+    print("Reading from db")
+    total = Matches.objects.all().count()
+    count = 0
+    for match in Matches.objects.all().iterator():
+        if count % 500 == 0:
+          print (f'({count} / {total})')
+        count += 1
+        if type(match.average_elo) == str:
+          #at least one element has a string elo???? throw it away
+          continue
+        if (match.player1_civilization == match.player2_civilization) :
+          #mirror matches bad
+          continue
+        #round down to nearest delta
+        elo = ELO_DELTA * math.floor(match.average_elo/ELO_DELTA)
+        #PLAYER 1
+        #build dict key for player1
+        key = (match.player1_civilization,
+               match.map_id,
+               match.ladder_id,
+               match.patch_number,
+               elo)
+        if key not in data_dict:
+            data_dict[key] = {'victory_count':0, "loss_count":0}
+        if match.player1_victory:
+            data_dict[key]['victory_count'] += 1
+        else:
+            data_dict[key]['loss_count'] += 1
+
+        #PLAYER 2
+        #build dict key for player2
+        key = (match.player2_civilization,
+               match.map_id,
+               match.ladder_id,
+               match.patch_number,
+               elo)
+        if key not in data_dict:
+            data_dict[key] = {'victory_count':0, "loss_count":0}
+        if match.player2_victory:
+            data_dict[key]['victory_count'] += 1
+        else:
+            data_dict[key]['loss_count'] += 1
+    # Now insert records into db
+    print("Creating db objects")
+    count = 0
+    objects = []
+    for k,v in data_dict.items():
+        if count % 100 == 0:
+          print (f'({count} / {len(data_dict)})')
+        count += 1
+        objects.append(CivEloWins(civilization=k[0],
+                                  map_id=k[1],
+                                  ladder_id=k[2],
+                                  patch_number=k[3],
+                                  elo=k[4],
+                                  victory_count=v['victory_count'],
+                                  loss_count=v['loss_count']))
+
+    print("Inserting Objects")
+    CivEloWins.objects.bulk_create(objects)
+    end = time.time()
+    print("build_civ_elo_wins - elapsed time", end - start)
+
+# Run this function to build the opening elo wins table for quicker lookups
+def build_opening_elo_wins():
+    start = time.time()
+    # drop all records and rebuild
+    OpeningEloWins.objects.all().delete()
+
+    #Use tuples as key to store data in the interim
+    # (opening1_id, opening2_id,map_id,ladder_id,patch_number,elo)
+    # ["opening1_victory_count", "opening1_loss_count"]
+    data_dict = {}
+
+    print("Reading from db")
+    total = Matches.objects.all().count()
+    count = 0
+    for match in Matches.objects.all().iterator():
+        if count % 500 == 0:
+          print (f'({count} / {total})')
+        count += 1
+        if type(match.average_elo) == str:
+          #at least one element has a string elo???? throw it away
+          continue
+        #round down to nearest delta
+        elo = ELO_DELTA * math.floor(match.average_elo/ELO_DELTA)
+        player_openings = []
+        #Get players! 1-indexed
+        for player in range(1,3):
+            valid_openings = []
+            opening_index = 0
+            #Get openings!
+            for opening_info in OPENINGS:
+                valid_opening = False
+                #opening inclusions
+                for inclusion in opening_info[1]:
+                    valid_inclusion = True
+                    if not valid_inclusion:
+                        break
+                    #for each bit in bit set
+                    for i in range(32):
+                        #if true bit
+                        if inclusion & 2**i:
+                            if eval(f'match.player{player}_opening_flag{i}') == False:
+                                valid_inclusion = False
+                                break
+                    #Opening is valid if any inclusions are true
+                    valid_opening |= valid_inclusion
+                exclusions = opening_info[2]
+
+                if not len(exclusions):
+                   exclusions = [OpeningType.Unused.value]
+                #opening exclusions
+                for exclusion in exclusions:
+                    if not valid_opening:
+                        break
+                    #for each bit in bit set
+                    for i in range(32):
+                        #if true bit
+                        if exclusion & 2**i:
+                            if eval(f'match.player{player}_opening_flag{i}') == True:
+                                valid_opening = False
+                                break
+                if valid_opening:
+                    valid_openings.append(opening_index)
+                opening_index += 1
+            player_openings.append(valid_openings)
+        #round down to nearest delta
+        elo = ELO_DELTA * math.floor(match.average_elo/ELO_DELTA)
+        #Every player 1 opening played against every player 2 opening
+        for p1_opening in player_openings[0]:
+            for p2_opening in player_openings[1]:
+                #greater opening second to make it simpler on storage
+                if p1_opening > p2_opening:
+                    #swap the 2
+                    p1_opening, p2_openings = p2_opening, p1_opening
+                    p1_win = match.player2_victory
+                else:
+                    p1_win = match.player1_victory
+                key = (p1_opening,
+                       p2_opening,
+                       match.map_id,
+                       match.ladder_id,
+                       match.patch_number,
+                       elo)
+                if key not in data_dict:
+                    data_dict[key] = {'opening1_victory_count':0,
+                                      "opening1_loss_count":0,
+                                      "opening2_victory_count":0,
+                                      "opening2_loss_count":0}
+                if p1_win:
+                    data_dict[key]['opening1_victory_count'] += 1
+                    data_dict[key]['opening2_loss_count'] += 1
+                else:
+                    data_dict[key]['opening1_loss_count'] += 1
+                    data_dict[key]['opening2_victory_count'] += 1
+
+    # Now insert records into db
+    print("Creating db objects")
+    count = 0
+    objects = []
+    def generator():
+        for k,v in data_dict.items():
+            (yield OpeningEloWins(opening1_id=k[0],
+                                  opening2_id=k[1],
+                                  map_id=k[2],
+                                  ladder_id=k[3],
+                                  patch_number=k[4],
+                                  elo=k[5],
+                                  opening1_victory_count=v['opening1_victory_count'],
+                                  opening1_loss_count=v['opening1_loss_count'],
+                                  opening2_victory_count=v['opening2_victory_count'],
+                                  opening2_loss_count=v['opening2_loss_count']))
+
+    OpeningEloWins.objects.bulk_create(generator())
+    end = time.time()
+    print("build_civ_elo_wins - elapsed time", end - start)
+
+
+
+# Run this function to build the opening elo techs table for quicker lookups
+def build_opening_elo_techs():
+    start = time.time()
+    # drop all records and rebuild
+    OpeningEloTechs.objects.all().delete()
+
+    #Use tuples as key to store data in the interim
+    # (opening1_id, opening2_id,map_id,ladder_id,patch_number,elo)
+    # ["opening1_victory_count", "opening1_loss_count"]
+    data_dict = {}
+
+    print("Reading from db")
+    total = MatchPlayerActions.objects.count()
+    print(total)
+    count = 0
+    techs = [tech.id for tech in Techs.objects.all().iterator()]
+
+    #optimization to reduce frequency openings are calculated
+    previous_match_id = -2
+    previous_match_openings = {}
+
+    for match_player_action in MatchPlayerActions.objects.select_related('match').all().iterator():
+        if count % 500 == 0:
+          print (f'({count} / {total}) with {len(data_dict)} elements.')
+        count += 1
+        if match_player_action.event_type != 3 or match_player_action.event_id not in techs:
+          continue
+        match = match_player_action.match
+        if type(match.average_elo) == str:
+          #at least one element has a string elo???? throw it away
+          continue
+        #round down to nearest delta
+        elo = ELO_DELTA * math.floor(match.average_elo/ELO_DELTA)
+        if match.id == previous_match_id and match_player_action.player_id in previous_match_openings:
+            player_openings = previous_match_openings
+        else:
+            player_openings = {}
+            #Get players! 1-indexed
+            for player in range(1,3):
+                opening_index = 0
+                player_id = eval(f'match.player{player}_id')
+                if player_id not in player_openings:
+                    player_openings[player_id] = []
+                #Get openings!
+                for opening_info in OPENINGS:
+                    valid_opening = False
+                    #opening inclusions
+                    for inclusion in opening_info[1]:
+                        valid_inclusion = True
+                        if not valid_inclusion:
+                            break
+                        #for each bit in bit set
+                        for i in range(32):
+                            #if true bit
+                            if inclusion & 2**i:
+                                if eval(f'match.player{player}_opening_flag{i}') == False:
+                                    valid_inclusion = False
+                                    break
+                        #Opening is valid if any inclusions are true
+                        valid_opening |= valid_inclusion
+                    exclusions = opening_info[2]
+
+                    if not len(exclusions):
+                       exclusions = [OpeningType.Unused.value]
+                    #opening exclusions
+                    for exclusion in exclusions:
+                        if not valid_opening:
+                            break
+                        #for each bit in bit set
+                        for i in range(32):
+                            #if true bit
+                            if exclusion & 2**i:
+                                if eval(f'match.player{player}_opening_flag{i}') == True:
+                                    valid_opening = False
+                                    break
+                    if valid_opening:
+                        player_openings[player_id].append(opening_index)
+                    opening_index += 1
+        previous_match_openings = player_openings
+        previous_match_id = match.id
+        #round down to nearest delta
+        elo = ELO_DELTA * math.floor(match.average_elo/ELO_DELTA)
+        #get techs for match id
+
+        for opening in player_openings[match_player_action.player_id]: #1 indexed, remember
+            key = (opening,
+                   match_player_action.event_id,
+                   match.map_id,
+                   match.ladder_id,
+                   match.patch_number,
+                   elo)
+            if key not in data_dict:
+                data_dict[key] = {'research_count':0,
+                                  "average_time":0}
+            #multiply average by count and add the new time to keep an average without having to store everything
+            data_dict[key]['average_time'] =\
+                ((data_dict[key]['average_time'] * data_dict[key]['research_count']) + match_player_action.time) /\
+                (data_dict[key]['research_count']+1)
+            data_dict[key]['research_count'] += 1
+
+    # Now insert records into db
+    print("Creating db objects")
+    count = 0
+    objects = []
+    def generator():
+        for k,v in data_dict.items():
+            (yield OpeningEloTechs(opening_id=k[0],
+                                   tech_id=k[1],
+                                   map_id=k[2],
+                                   ladder_id=k[3],
+                                   patch_number=k[4],
+                                   elo=k[5],
+                                   average_time=v['average_time'],
+                                   count=v['research_count']))
+
+    OpeningEloTechs.objects.bulk_create(generator())
+    end = time.time()
+    print("build_opening_elo_techs - elapsed time", end - start)

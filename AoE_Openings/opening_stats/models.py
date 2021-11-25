@@ -18,6 +18,7 @@ class MatchPlayerActions(models.Model):
 
     class Meta:
         db_table = 'match_player_actions'
+        unique_together = [['match', 'player', 'event_type', 'event_id']]
 
 
 class Matches(models.Model):
@@ -120,6 +121,7 @@ class Players(models.Model):
 #const table for storing specific tech names and ids
 class Techs(models.Model):
   name = models.TextField()
+  duration = models.IntegerField()
 
   class Meta:
     db_table = 'techs'
@@ -137,3 +139,50 @@ class Ladders(models.Model):
 
   class Meta:
     db_table = 'ladders'
+
+#const table for storing specific ladder names and ids
+class Patches(models.Model):
+
+  class Meta:
+    db_table = 'patches'
+
+class CivEloWins(models.Model):
+  civilization = models.IntegerField()
+  map_id = models.IntegerField()
+  ladder_id = models.IntegerField()
+  patch_number = models.IntegerField()
+  elo = models.IntegerField()
+  victory_count = models.IntegerField()
+  loss_count = models.IntegerField()
+
+  class Meta:
+    db_table = 'civ_elo_wins'
+
+class OpeningEloWins(models.Model):
+  opening1_id = models.IntegerField()
+  opening2_id = models.IntegerField()
+  map_id = models.IntegerField()
+  ladder_id = models.IntegerField()
+  patch_number = models.IntegerField()
+  elo = models.IntegerField()
+  opening1_victory_count = models.IntegerField()
+  opening1_loss_count = models.IntegerField()
+  opening2_victory_count = models.IntegerField()
+  opening2_loss_count = models.IntegerField()
+
+  class Meta:
+    db_table = 'opening_elo_wins'
+
+class OpeningEloTechs(models.Model):
+  opening_id = models.IntegerField()
+  tech_id = models.IntegerField()
+  map_id = models.IntegerField()
+  ladder_id = models.IntegerField()
+  patch_number = models.IntegerField()
+  elo = models.IntegerField()
+  average_time = models.FloatField()
+  count = models.IntegerField()
+
+  class Meta:
+    db_table = 'opening_elo_techs'
+

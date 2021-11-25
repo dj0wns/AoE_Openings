@@ -22,6 +22,7 @@ class Input extends Component {
     this.callback = this.props.callback;
     this.exclude_mirror_default = this.props.defaultmirror
     this.include_techs = this.props.include_techs
+    this.include_openings = this.props.include_openings
     this.handleSubmit = this.handleSubmit.bind(this);
     this.setInitialSelected = this.setInitialSelected.bind(this);
     this.min_elo_callback = this.min_elo_callback.bind(this);
@@ -144,7 +145,8 @@ class Input extends Component {
     fetch('/api/v1/info/')
     .then(res => res.json())
     .then((data) => {
-      this.setState({ info: data })
+      data.techs.sort(function(a,b){return a-b});
+      this.setState({ info: data });
     })
     .catch(console.log)
 
@@ -363,46 +365,21 @@ class Input extends Component {
                            onRemove={this.handle_maps_remove}/>
             </div>
           </div>
-          <div class="form-row">
-            <div class="form-check col-md-4">
-              <label for="include_civs">Include Civilizations</label>
-              <Multiselect name="include_civs"
-                           options={this.state.info.civs}
-                           selectedValues={this.state.include_civs}
-                           displayValue='name'
-                           onSelect={this.handle_include_civs_add}
-                           onRemove={this.handle_include_civs_remove}/>
+          { this.include_openings
+            ?
+            <div class="form-row">
+              <div class="form-check col-md-6">
+                <label for="include_openings">Include Openings</label>
+                <Multiselect name="include_openings"
+                             options={this.state.info.openings}
+                             selectedValues={this.state.include_openings}
+                             displayValue='name'
+                             onSelect={this.handle_include_openings_add}
+                             onRemove={this.handle_include_openings_remove}/>
+              </div>
             </div>
-            <div class="form-check col-md-4">
-              <label for="exclude_civs">Exclude Civilizations</label>
-              <Multiselect name="exclude_civs"
-                           options={this.state.info.civs}
-                           selectedValues={this.state.exclude_civs}
-                           displayValue='name'
-                           onSelect={this.handle_exclude_civs_add}
-                           onRemove={this.handle_exclude_civs_remove}/>
-            </div>
-            <div class="form-check col-md-4">
-              <label for="clamp_civs">Clamp Civilizations</label>
-              <Multiselect name="clamp_civs"
-                           options={this.state.info.civs}
-                           selectedValues={this.state.clamp_civs}
-                           displayValue='name'
-                           onSelect={this.handle_clamp_civs_add}
-                           onRemove={this.handle_clamp_civs_remove}/>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-check col-md-6">
-              <label for="include_openings">Include Openings</label>
-              <Multiselect name="include_openings"
-                           options={this.state.info.openings}
-                           selectedValues={this.state.include_openings}
-                           displayValue='name'
-                           onSelect={this.handle_include_openings_add}
-                           onRemove={this.handle_include_openings_remove}/>
-            </div>
-          </div>
+            : <div/>
+          }
           { this.include_techs
             ?
               <div class="form-row">

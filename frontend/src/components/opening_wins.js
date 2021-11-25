@@ -67,7 +67,7 @@ class OpeningWins extends Component {
     if (this.state.openings.hasOwnProperty("openings_list")) {
       return (
         <div>
-            <Input defaultmirror={false} ref={this.input} callback={this.handleSubmit} parent_query={this.query_params}/>
+            <Input defaultmirror={false} ref={this.input} callback={this.handleSubmit} parent_query={this.query_params} include_openings={true}/>
             <h3> Total Games in Query: {this.state.openings.total}</h3>
             <DataTable id="civTable" striped responsive data={this.state.openings.openings_list} columns={columns} cellspacing="0" width="80%" defaultSortFieldId={1}/>
         </div>
@@ -75,7 +75,7 @@ class OpeningWins extends Component {
     }
     return (
       <div>
-        <Input defaultmirror={false} ref={this.input} callback={this.handleSubmit} parent_query={this.query_params}/>
+        <Input defaultmirror={false} ref={this.input} callback={this.handleSubmit} parent_query={this.query_params} include_openings={true}/>
         <center><h1>Loading Results...</h1></center>
       </div>
     );

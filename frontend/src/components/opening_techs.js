@@ -69,8 +69,8 @@ class OpeningTechs extends Component {
     console.log(this.state.openings)
     return (
       <div>
-          <Input defaultmirror={false} ref={this.input} callback={this.handleSubmit} parent_query={this.query_params} include_techs={true}/>
-          <h3> Total Games in Query: {this.state.openings.total}</h3>
+          <Input defaultmirror={false} ref={this.input} callback={this.handleSubmit} parent_query={this.query_params} include_techs={true} include_openings={true}/>
+          <h3> Total Techs Researched: {this.state.openings.total}</h3>
           <DataTable id="civTable" striped responsive data={this.state.openings.openings_list} columns={columns} cellspacing="0" width="80%" defaultSortFieldId={1}/>
       </div>
     );
