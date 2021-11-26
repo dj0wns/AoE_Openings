@@ -8,12 +8,13 @@ class Home extends Component {
   render () {
     return (
       <div>
-        <h1>Welcome to AoE Pulse!</h1> </br>
+        <h1>Welcome to AoE Pulse!</h1>
+        </br>
         <MetaSnapshotChart/>
         <div>
           <h2>Update (Nov 26, 2021)</h2>
           <p>
-            Big rewrite of the database to improve scaling and responsiveness with up to 200x speedups for some of the biggest queries! I never expected to have >1M replays analyzed when I started this project.
+            Big rewrite of the database to improve scaling and responsiveness with up to 200x speedups for some of the biggest queries! I never expected to have >1M replays analyzed when I started this project. Next big project is adding an endpoint and infrastructure to automatically update the website as I download and parse new replays.
           </p>
           <h2>Alpha release (Oct 5, 2021)</h2>
           <p>
