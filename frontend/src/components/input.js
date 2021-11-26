@@ -6,7 +6,6 @@ class Input extends Component {
     info: {civs:[], ladders:[], maps:[], patches:[], openings:[], techs:[]},
     min_elo_value: 0,
     max_elo_value: 3000,
-    exclude_mirrors: true,
     include_ladders: [],
     include_maps: [],
     include_patches: [],
@@ -104,10 +103,6 @@ class Input extends Component {
       include_tech_ids = this.search_params.get('include_tech_ids').split(",").map(Number);
       include_tech_ids = this.formatArgumentsForMultiSelect(include_tech_ids, this.state.info.techs)
     }
-    var exclude_mirrors = this.exclude_mirror_default;
-    if (this.search_params.get('exclude_mirrors') != null) {
-      exclude_mirrors = this.search_params.get('exclude_mirrors')
-    }
     var min_elo_value = 0;
     if (this.search_params.get('min_elo') != null) {
       min_elo_value = this.search_params.get('min_elo')
@@ -120,7 +115,6 @@ class Input extends Component {
     this.setState({
         min_elo_value: min_elo_value,
         max_elo_value: max_elo_value,
-        exclude_mirrors: exclude_mirrors,
         include_ladders: include_ladder_ids,
         include_maps: include_map_ids,
         include_patches: include_patch_ids,
@@ -161,9 +155,6 @@ class Input extends Component {
 
     if (this.state.max_elo_value != 3000 && this.state.max_elo_value != null) {
       data_dict["max_elo"] = this.state.max_elo_value;
-    }
-    if (this.state.exclude_mirrors != null) {
-      data_dict["exclude_mirrors"] = this.state.exclude_mirrors;
     }
     if (this.state.include_ladders.length) {
       data_dict['include_ladder_ids'] = this.state.include_ladders.map( item => {return item.id});
@@ -330,10 +321,6 @@ class Input extends Component {
             <div class="form-group col-md-4 mx-auto">
               <label for="max_elo_value">Max Elo</label>
               <input type="number" class="form-control" id="max_elo_value" name="max_elo_value" step="25" min="0" max="3000" value={this.state.max_elo_value} onChange={this.handle_change}/>
-            </div>
-            <div class="form-group col-md-4 center-block my-auto civ-div">
-              <input type="checkbox" class="form-check-input" name="exclude_mirrors" id="exclude_mirrors" checked={this.state.exclude_mirrors} onChange={this.handle_checkbox_change}/>
-              <label class="form-check-label" for="exclude_mirrors">Exclude Civ Mirrors</label>
             </div>
           </div>
           <div class="form-row">

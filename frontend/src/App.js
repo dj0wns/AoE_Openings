@@ -20,6 +20,12 @@ class App extends Component {
           <Menu/>
           <div class="main-div">
             <Switch>
+              <Route exact path="/" render={() => {
+                      return (
+                        <Redirect to="/home"/>
+                      )
+                  }}
+              />
               <Route path="/home" component={Home}/>
               <Route path="/civ_stats" component={Civs}/>
               <Route path="/opening_stats" component={OpeningWins}/>
