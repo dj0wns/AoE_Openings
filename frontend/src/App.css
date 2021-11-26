@@ -48,6 +48,15 @@
   padding-right: 5%;
 }
 
+.text-div {
+  padding-left: 15%;
+  padding-right: 15%;
+}
+
+.page-title {
+  text-align: center;
+}
+
 .rdt_TableCell {
   font-size:Medium;
 }

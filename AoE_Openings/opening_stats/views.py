@@ -40,7 +40,7 @@ class Info(generics.ListAPIView):
   def list (self, request):
     ret_dict = {}
     civ_list = []
-    patches = Patches.objects.all().values()
+    patches = Patches.objects.all().values().order_by('-id')
     patch_list = []
     for patch in patches:
       if patch['id'] > 0:
@@ -137,7 +137,8 @@ class MetaSnapshot(generics.ListAPIView):
     aggregate_string += ')' #close aggregate
     matches = eval(aggregate_string)
     meta_list = utils.count_response_to_dict(matches)
-    content = JSONRenderer().render(meta_list)
+    return_dict = {'patch':current_patch, 'meta_list':meta_list}
+    content = JSONRenderer().render(return_dict)
     return HttpResponse(content)
 
 class OpeningTechs(generics.ListAPIView):

@@ -314,11 +314,11 @@ class Input extends Component {
       <div>
         <form onSubmit={this.handleSubmit}>
           <div class="form-row">
-            <div class="form-group col-md-4 mx-auto">
+            <div class="form-group col-md-6 mx-auto">
               <label for="min_elo_value">Min Elo</label>
               <input type="number" class="form-control" id="min_elo_value" name="min_elo_value" step="25" min="0" max="3000" value={this.state.min_elo_value} onChange={this.handle_change}/>
             </div>
-            <div class="form-group col-md-4 mx-auto">
+            <div class="form-group col-md-6 mx-auto">
               <label for="max_elo_value">Max Elo</label>
               <input type="number" class="form-control" id="max_elo_value" name="max_elo_value" step="25" min="0" max="3000" value={this.state.max_elo_value} onChange={this.handle_change}/>
             </div>
