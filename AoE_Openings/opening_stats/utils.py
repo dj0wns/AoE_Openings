@@ -468,10 +468,53 @@ def generate_exclude_statements_from_parameters(data, table_prefix = ""):
         filter_string += f'.exclude({table_prefix}player1_civilization=F("{table_prefix}player2_civilization"))'
     return filter_string if exclusions else ""
 
+def clear_intermediary_tables():
+  CivEloWins.objects.all().delete()
+  OpeningEloWins.objects.all().delete()
+  OpeningEloTechs.objects.all().delete()
+
+def clear_main_tables():
+  Matches.objects.all().delete()
+  MatchPlayerActions.objects.all().delete()
+
 def update_intermediary_tables():
   build_civ_elo_wins()
   build_opening_elo_wins()
-  build_opening_elo_techs()
+  #build_opening_elo_techs()
+
+def build_civ_elo_win_for_match(match, data_dict):
+    if (match.player1_civilization == match.player2_civilization) :
+      #mirror matches bad
+      return
+    #round down to nearest delta
+    elo = ELO_DELTA * math.floor(match.average_elo/ELO_DELTA)
+    #PLAYER 1
+    #build dict key for player1
+    key = (match.player1_civilization,
+           match.map_id,
+           match.ladder_id,
+           match.patch_number,
+           elo)
+    if key not in data_dict:
+        data_dict[key] = {'victory_count':0, "loss_count":0}
+    if match.player1_victory:
+        data_dict[key]['victory_count'] += 1
+    else:
+        data_dict[key]['loss_count'] += 1
+
+    #PLAYER 2
+    #build dict key for player2
+    key = (match.player2_civilization,
+           match.map_id,
+           match.ladder_id,
+           match.patch_number,
+           elo)
+    if key not in data_dict:
+        data_dict[key] = {'victory_count':0, "loss_count":0}
+    if match.player2_victory:
+        data_dict[key]['victory_count'] += 1
+    else:
+            data_dict[key]['loss_count'] += 1
 
 # Run this function to build the civ elo wins table for quicker lookups
 def build_civ_elo_wins():
@@ -493,38 +536,8 @@ def build_civ_elo_wins():
         if type(match.average_elo) == str:
           #at least one element has a string elo???? throw it away
           continue
-        if (match.player1_civilization == match.player2_civilization) :
-          #mirror matches bad
-          continue
-        #round down to nearest delta
-        elo = ELO_DELTA * math.floor(match.average_elo/ELO_DELTA)
-        #PLAYER 1
-        #build dict key for player1
-        key = (match.player1_civilization,
-               match.map_id,
-               match.ladder_id,
-               match.patch_number,
-               elo)
-        if key not in data_dict:
-            data_dict[key] = {'victory_count':0, "loss_count":0}
-        if match.player1_victory:
-            data_dict[key]['victory_count'] += 1
-        else:
-            data_dict[key]['loss_count'] += 1
+        build_civ_elo_win_for_match(match, data_dict)
 
-        #PLAYER 2
-        #build dict key for player2
-        key = (match.player2_civilization,
-               match.map_id,
-               match.ladder_id,
-               match.patch_number,
-               elo)
-        if key not in data_dict:
-            data_dict[key] = {'victory_count':0, "loss_count":0}
-        if match.player2_victory:
-            data_dict[key]['victory_count'] += 1
-        else:
-            data_dict[key]['loss_count'] += 1
     # Now insert records into db
     print("Creating db objects")
     count = 0
@@ -545,6 +558,84 @@ def build_civ_elo_wins():
     CivEloWins.objects.bulk_create(objects)
     end = time.time()
     print("build_civ_elo_wins - elapsed time", end - start)
+
+def build_opening_elo_win_for_match(match, data_dict):
+    #round down to nearest delta
+    elo = ELO_DELTA * math.floor(match.average_elo/ELO_DELTA)
+    player_openings = []
+    #Get players! 1-indexed
+    for player in range(1,3):
+        valid_openings = []
+        opening_index = 0
+        #Get openings!
+        for opening_info in OPENINGS:
+            valid_opening = False
+            #opening inclusions
+            for inclusion in opening_info[1]:
+                valid_inclusion = True
+                if not valid_inclusion:
+                    break
+                #for each bit in bit set
+                for i in range(32):
+                    #if true bit
+                    if inclusion & 2**i:
+                        if eval(f'match.player{player}_opening_flag{i}') == False:
+                            valid_inclusion = False
+                            break
+                #Opening is valid if any inclusions are true
+                valid_opening |= valid_inclusion
+            exclusions = opening_info[2]
+
+            if not len(exclusions):
+               exclusions = [OpeningType.Unused.value]
+            #opening exclusions
+            for exclusion in exclusions:
+                if not valid_opening:
+                    break
+                #for each bit in bit set
+                for i in range(32):
+                    #if true bit
+                    if exclusion & 2**i:
+                        if eval(f'match.player{player}_opening_flag{i}') == True:
+                            valid_opening = False
+                            break
+            if valid_opening:
+                valid_openings.append(opening_index)
+            opening_index += 1
+        player_openings.append(valid_openings)
+    #round down to nearest delta
+    elo = ELO_DELTA * math.floor(match.average_elo/ELO_DELTA)
+    #Every player 1 opening played against every player 2 opening
+    for p1_opening in player_openings[0]:
+        for p2_opening in player_openings[1]:
+            #greater opening second to make it simpler on storage
+            if p1_opening > p2_opening:
+                #swap the 2
+                # Hack use a new variable because switching them in place seemed to break things
+                opening1 = p2_opening
+                opening2 = p1_opening
+                p1_win = match.player2_victory
+            else:
+                opening1 = p1_opening
+                opening2 = p2_opening
+                p1_win = match.player1_victory
+            key = (opening1,
+                   opening2,
+                   match.map_id,
+                   match.ladder_id,
+                   match.patch_number,
+                   elo)
+            if key not in data_dict:
+                data_dict[key] = {'opening1_victory_count':0,
+                                  "opening1_loss_count":0,
+                                  "opening2_victory_count":0,
+                                  "opening2_loss_count":0}
+            if p1_win:
+                data_dict[key]['opening1_victory_count'] += 1
+                data_dict[key]['opening2_loss_count'] += 1
+            else:
+                data_dict[key]['opening1_loss_count'] += 1
+                data_dict[key]['opening2_victory_count'] += 1
 
 # Run this function to build the opening elo wins table for quicker lookups
 def build_opening_elo_wins():
@@ -567,13 +658,42 @@ def build_opening_elo_wins():
         if type(match.average_elo) == str:
           #at least one element has a string elo???? throw it away
           continue
-        #round down to nearest delta
-        elo = ELO_DELTA * math.floor(match.average_elo/ELO_DELTA)
-        player_openings = []
+        build_opening_elo_win_for_match(match, data_dict)
+
+    # Now insert records into db
+    print("Creating db objects")
+    count = 0
+    objects = []
+    def generator():
+        for k,v in data_dict.items():
+            (yield OpeningEloWins(opening1_id=k[0],
+                                  opening2_id=k[1],
+                                  map_id=k[2],
+                                  ladder_id=k[3],
+                                  patch_number=k[4],
+                                  elo=k[5],
+                                  opening1_victory_count=v['opening1_victory_count'],
+                                  opening1_loss_count=v['opening1_loss_count'],
+                                  opening2_victory_count=v['opening2_victory_count'],
+                                  opening2_loss_count=v['opening2_loss_count']))
+
+    OpeningEloWins.objects.bulk_create(generator())
+    end = time.time()
+    print("build_civ_elo_wins - elapsed time", end - start)
+
+def build_opening_elo_techs_for_match_and_action(match, action, data_dict, previous_match_id, previous_match_openings):
+    #round down to nearest delta
+    elo = ELO_DELTA * math.floor(match.average_elo/ELO_DELTA)
+    if match.id == previous_match_id and action.player_id in previous_match_openings:
+        player_openings = previous_match_openings
+    else:
+        player_openings = {}
         #Get players! 1-indexed
         for player in range(1,3):
-            valid_openings = []
             opening_index = 0
+            player_id = eval(f'match.player{player}_id')
+            if player_id not in player_openings:
+                player_openings[player_id] = []
             #Get openings!
             for opening_info in OPENINGS:
                 valid_opening = False
@@ -607,61 +727,97 @@ def build_opening_elo_wins():
                                 valid_opening = False
                                 break
                 if valid_opening:
-                    valid_openings.append(opening_index)
+                    player_openings[player_id].append(opening_index)
                 opening_index += 1
-            player_openings.append(valid_openings)
-        #round down to nearest delta
-        elo = ELO_DELTA * math.floor(match.average_elo/ELO_DELTA)
-        #Every player 1 opening played against every player 2 opening
-        for p1_opening in player_openings[0]:
-            for p2_opening in player_openings[1]:
-                #greater opening second to make it simpler on storage
-                if p1_opening > p2_opening:
-                    #swap the 2
-                    p1_opening, p2_openings = p2_opening, p1_opening
-                    p1_win = match.player2_victory
-                else:
-                    p1_win = match.player1_victory
-                key = (p1_opening,
-                       p2_opening,
-                       match.map_id,
-                       match.ladder_id,
-                       match.patch_number,
-                       elo)
-                if key not in data_dict:
-                    data_dict[key] = {'opening1_victory_count':0,
-                                      "opening1_loss_count":0,
-                                      "opening2_victory_count":0,
-                                      "opening2_loss_count":0}
-                if p1_win:
-                    data_dict[key]['opening1_victory_count'] += 1
-                    data_dict[key]['opening2_loss_count'] += 1
-                else:
-                    data_dict[key]['opening1_loss_count'] += 1
-                    data_dict[key]['opening2_victory_count'] += 1
+    #round down to nearest delta
+    elo = ELO_DELTA * math.floor(match.average_elo/ELO_DELTA)
+    #get techs for match id
 
-    # Now insert records into db
-    print("Creating db objects")
-    count = 0
-    objects = []
-    def generator():
-        for k,v in data_dict.items():
-            (yield OpeningEloWins(opening1_id=k[0],
-                                  opening2_id=k[1],
-                                  map_id=k[2],
-                                  ladder_id=k[3],
-                                  patch_number=k[4],
-                                  elo=k[5],
-                                  opening1_victory_count=v['opening1_victory_count'],
-                                  opening1_loss_count=v['opening1_loss_count'],
-                                  opening2_victory_count=v['opening2_victory_count'],
-                                  opening2_loss_count=v['opening2_loss_count']))
+    for opening in player_openings[action.player_id]: #1 indexed, remember
+        key = (opening,
+               action.event_id,
+               match.map_id,
+               match.ladder_id,
+               match.patch_number,
+               elo)
+        if key not in data_dict:
+            data_dict[key] = {'research_count':0,
+                              "average_time":0}
+        #multiply average by count and add the new time to keep an average without having to store everything
+        data_dict[key]['average_time'] =\
+            ((data_dict[key]['average_time'] * data_dict[key]['research_count']) + action.time) /\
+            (data_dict[key]['research_count']+1)
+        data_dict[key]['research_count'] += 1
+    return player_openings
 
-    OpeningEloWins.objects.bulk_create(generator())
-    end = time.time()
-    print("build_civ_elo_wins - elapsed time", end - start)
+def build_opening_elo_techs_for_mpa_match(match, data_dict, previous_match_id, previous_match_openings):
+    #round down to nearest delta
+    elo = ELO_DELTA * math.floor(match.average_elo/ELO_DELTA)
+    if match.id == previous_match_id and match_player_action.player_id in previous_match_openings:
+        player_openings = previous_match_openings
+    else:
+        player_openings = {}
+        #Get players! 1-indexed
+        for player in range(1,3):
+            opening_index = 0
+            player_id = eval(f'match.player{player}_id')
+            if player_id not in player_openings:
+                player_openings[player_id] = []
+            #Get openings!
+            for opening_info in OPENINGS:
+                valid_opening = False
+                #opening inclusions
+                for inclusion in opening_info[1]:
+                    valid_inclusion = True
+                    if not valid_inclusion:
+                        break
+                    #for each bit in bit set
+                    for i in range(32):
+                        #if true bit
+                        if inclusion & 2**i:
+                            if eval(f'match.player{player}_opening_flag{i}') == False:
+                                valid_inclusion = False
+                                break
+                    #Opening is valid if any inclusions are true
+                    valid_opening |= valid_inclusion
+                exclusions = opening_info[2]
 
+                if not len(exclusions):
+                   exclusions = [OpeningType.Unused.value]
+                #opening exclusions
+                for exclusion in exclusions:
+                    if not valid_opening:
+                        break
+                    #for each bit in bit set
+                    for i in range(32):
+                        #if true bit
+                        if exclusion & 2**i:
+                            if eval(f'match.player{player}_opening_flag{i}') == True:
+                                valid_opening = False
+                                break
+                if valid_opening:
+                    player_openings[player_id].append(opening_index)
+                opening_index += 1
+    #round down to nearest delta
+    elo = ELO_DELTA * math.floor(match.average_elo/ELO_DELTA)
+    #get techs for match id
 
+    for opening in player_openings[match_player_action.player_id]: #1 indexed, remember
+        key = (opening,
+               match_player_action.event_id,
+               match.map_id,
+               match.ladder_id,
+               match.patch_number,
+               elo)
+        if key not in data_dict:
+            data_dict[key] = {'research_count':0,
+                              "average_time":0}
+        #multiply average by count and add the new time to keep an average without having to store everything
+        data_dict[key]['average_time'] =\
+            ((data_dict[key]['average_time'] * data_dict[key]['research_count']) + match_player_action.time) /\
+            (data_dict[key]['research_count']+1)
+        data_dict[key]['research_count'] += 1
+    return player_openings
 
 # Run this function to build the opening elo techs table for quicker lookups
 def build_opening_elo_techs():
@@ -694,74 +850,8 @@ def build_opening_elo_techs():
         if type(match.average_elo) == str:
           #at least one element has a string elo???? throw it away
           continue
-        #round down to nearest delta
-        elo = ELO_DELTA * math.floor(match.average_elo/ELO_DELTA)
-        if match.id == previous_match_id and match_player_action.player_id in previous_match_openings:
-            player_openings = previous_match_openings
-        else:
-            player_openings = {}
-            #Get players! 1-indexed
-            for player in range(1,3):
-                opening_index = 0
-                player_id = eval(f'match.player{player}_id')
-                if player_id not in player_openings:
-                    player_openings[player_id] = []
-                #Get openings!
-                for opening_info in OPENINGS:
-                    valid_opening = False
-                    #opening inclusions
-                    for inclusion in opening_info[1]:
-                        valid_inclusion = True
-                        if not valid_inclusion:
-                            break
-                        #for each bit in bit set
-                        for i in range(32):
-                            #if true bit
-                            if inclusion & 2**i:
-                                if eval(f'match.player{player}_opening_flag{i}') == False:
-                                    valid_inclusion = False
-                                    break
-                        #Opening is valid if any inclusions are true
-                        valid_opening |= valid_inclusion
-                    exclusions = opening_info[2]
-
-                    if not len(exclusions):
-                       exclusions = [OpeningType.Unused.value]
-                    #opening exclusions
-                    for exclusion in exclusions:
-                        if not valid_opening:
-                            break
-                        #for each bit in bit set
-                        for i in range(32):
-                            #if true bit
-                            if exclusion & 2**i:
-                                if eval(f'match.player{player}_opening_flag{i}') == True:
-                                    valid_opening = False
-                                    break
-                    if valid_opening:
-                        player_openings[player_id].append(opening_index)
-                    opening_index += 1
-        previous_match_openings = player_openings
+        previous_match_openings = build_opening_elo_techs_for_match(match, data_dict, previous_match_id, previous_match_openings)
         previous_match_id = match.id
-        #round down to nearest delta
-        elo = ELO_DELTA * math.floor(match.average_elo/ELO_DELTA)
-        #get techs for match id
-
-        for opening in player_openings[match_player_action.player_id]: #1 indexed, remember
-            key = (opening,
-                   match_player_action.event_id,
-                   match.map_id,
-                   match.ladder_id,
-                   match.patch_number,
-                   elo)
-            if key not in data_dict:
-                data_dict[key] = {'research_count':0,
-                                  "average_time":0}
-            #multiply average by count and add the new time to keep an average without having to store everything
-            data_dict[key]['average_time'] =\
-                ((data_dict[key]['average_time'] * data_dict[key]['research_count']) + match_player_action.time) /\
-                (data_dict[key]['research_count']+1)
-            data_dict[key]['research_count'] += 1
 
     # Now insert records into db
     print("Creating db objects")

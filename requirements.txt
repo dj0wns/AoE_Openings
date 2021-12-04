@@ -2,3 +2,5 @@ django
 django-cors-headers
 djangorestframework
 mgz
+python-dotenv
+djangorestframework-api-key

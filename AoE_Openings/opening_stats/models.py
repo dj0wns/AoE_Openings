@@ -152,11 +152,12 @@ class CivEloWins(models.Model):
   ladder_id = models.IntegerField()
   patch_number = models.IntegerField()
   elo = models.IntegerField()
-  victory_count = models.IntegerField()
-  loss_count = models.IntegerField()
+  victory_count = models.IntegerField(default=0)
+  loss_count = models.IntegerField(default=0)
 
   class Meta:
     db_table = 'civ_elo_wins'
+    unique_together = [['civilization', 'map_id', 'ladder_id', 'patch_number', 'elo']]
 
 class OpeningEloWins(models.Model):
   opening1_id = models.IntegerField()
@@ -165,13 +166,14 @@ class OpeningEloWins(models.Model):
   ladder_id = models.IntegerField()
   patch_number = models.IntegerField()
   elo = models.IntegerField()
-  opening1_victory_count = models.IntegerField()
-  opening1_loss_count = models.IntegerField()
-  opening2_victory_count = models.IntegerField()
-  opening2_loss_count = models.IntegerField()
+  opening1_victory_count = models.IntegerField(default=0)
+  opening1_loss_count = models.IntegerField(default=0)
+  opening2_victory_count = models.IntegerField(default=0)
+  opening2_loss_count = models.IntegerField(default=0)
 
   class Meta:
     db_table = 'opening_elo_wins'
+    unique_together = [['opening1_id', 'opening2_id', 'map_id', 'ladder_id', 'patch_number', 'elo']]
 
 class OpeningEloTechs(models.Model):
   opening_id = models.IntegerField()
@@ -180,9 +182,10 @@ class OpeningEloTechs(models.Model):
   ladder_id = models.IntegerField()
   patch_number = models.IntegerField()
   elo = models.IntegerField()
-  average_time = models.FloatField()
-  count = models.IntegerField()
+  average_time = models.FloatField(default=0.)
+  count = models.IntegerField(default=0)
 
   class Meta:
     db_table = 'opening_elo_techs'
+    unique_together = [['opening_id', 'tech_id', 'map_id', 'ladder_id', 'patch_number', 'elo']]
 

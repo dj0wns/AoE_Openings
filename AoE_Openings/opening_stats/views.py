@@ -2,10 +2,11 @@ from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
 from django.shortcuts import render
 from django.db.models import F, Count, Case, When, Q, Sum, Avg, Value, FloatField
 from django.views.decorators.cache import never_cache
-from rest_framework import generics
+from rest_framework import generics, views, status
 from rest_framework.renderers import JSONRenderer
-from opening_stats.models import Openings, Matches, MatchPlayerActions, Maps, Techs, Ladders, Patches, CivEloWins, OpeningEloWins, OpeningEloTechs
-from opening_stats.serializers import OpeningsSerializer, MatchesSerializer
+from rest_framework_api_key.permissions import HasAPIKey
+from opening_stats.models import Openings, Matches, MatchPlayerActions, Maps, Techs, Ladders, Patches, CivEloWins, OpeningEloWins, OpeningEloTechs, Players
+from opening_stats.serializers import OpeningsSerializer, MatchesSerializer, MatchInputSerializer, TestSerializer, MatchPlayerActionsSerializer, PlayersSerializer, PatchesSerializer
 from . import utils
 import os
 import json
@@ -13,10 +14,6 @@ import time
 
 with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'AoE_Rec_Opening_Analysis', 'aoe2techtree', 'data','data.json')) as json_file:
   aoe_data = json.load(json_file)
-
-# Create your views here.
-def index(request):
-  return HttpResponse("Hello, world, you made it. Just in the knick of time!")
 
 class OpeningNames(generics.ListAPIView):
   queryset = Openings.objects.all()
@@ -31,10 +28,14 @@ class OpeningNames(generics.ListAPIView):
 class LastUploadedMatch(generics.ListAPIView):
   @never_cache
   def list (self, request):
-    last_match = Matches.objects.latest("time")
-    serializer = MatchesSerializer(last_match)
-    content = JSONRenderer().render(serializer.data)
-    return HttpResponse(content)
+    if Matches.objects.exists():
+      last_match = Matches.objects.latest("time")
+      serializer = MatchesSerializer(last_match)
+      content = JSONRenderer().render(serializer.data)
+      return HttpResponse(content)
+    else:
+      content = JSONRenderer().render({"time":0})
+      return HttpResponse(content)
 
 class Info(generics.ListAPIView):
   def list (self, request):
@@ -192,3 +193,165 @@ class OpeningTechs(generics.ListAPIView):
     # convert counts to something more readable
     content = JSONRenderer().render(out_dict)
     return HttpResponse(content)
+
+class ImportMatches(views.APIView):
+  permission_classes = [HasAPIKey]
+  def post (self, request, format=None):
+    start = time.time()
+    civs_data_dict = {}
+    openings_data_dict = {}
+    techs_data_dict = {}
+
+    players_serializer = PlayersSerializer(data=request.data['players'], many=True)
+    patches_serializer = PatchesSerializer(data=request.data['patches'], many=True)
+    #create players and patches
+    players_serializer.is_valid(raise_exception=True)
+    patches_serializer.is_valid(raise_exception=True)
+    def player_generator():
+      for player in players_serializer.validated_data:
+        (yield Players(**player))
+    def patch_generator():
+      for patch in patches_serializer.validated_data:
+        (yield Patches(**patch))
+
+    Players.objects.bulk_create(player_generator(), ignore_conflicts=True)
+    Patches.objects.bulk_create(patch_generator(), ignore_conflicts=True)
+
+    matches_serializer = MatchesSerializer(data=request.data['matches'], many=True)
+    actions_serializer = MatchPlayerActionsSerializer(data=request.data['match_player_actions'], many=True)
+    matches_serializer.is_valid(raise_exception=True)
+
+    matches = matches_serializer.save()
+
+    print("Building match data_dicts")
+    for match in matches:
+      utils.build_civ_elo_win_for_match(match, civs_data_dict)
+      utils.build_opening_elo_win_for_match(match, openings_data_dict)
+
+    print("Updating civ wins and losses")
+    total = len(civs_data_dict)
+    print("Rows to modify: " + str(total))
+    civs_objs = []
+    for k,v in civs_data_dict.items():
+      # try update, else create object to insert with bulk create later
+      updated_count = CivEloWins.objects.filter(
+          civilization=k[0],
+          map_id=k[1],
+          ladder_id=k[2],
+          patch_number=k[3],
+          elo=k[4]).update(
+              victory_count=F('victory_count') + v['victory_count'],
+              loss_count=F('loss_count') + v['loss_count'])
+      if updated_count == 0:
+        obj = CivEloWins(
+          civilization=k[0],
+          map_id=k[1],
+          ladder_id=k[2],
+          patch_number=k[3],
+          elo=k[4],
+          victory_count=v['victory_count'],
+          loss_count=v['loss_count'])
+        civs_objs.append(obj)
+    if len(civs_objs):
+      CivEloWins.objects.bulk_create(civs_objs)
+    del civs_objs
+    del civs_data_dict
+
+    print("Updating opening matchups")
+    total = len(openings_data_dict)
+    print("Rows to modify: " + str(total))
+    openings_objs = []
+    for k,v in openings_data_dict.items():
+      # try update, else create object to insert with bulk create later
+      updated_count = OpeningEloWins.objects.filter(
+          opening1_id=k[0],
+          opening2_id=k[1],
+          map_id=k[2],
+          ladder_id=k[3],
+          patch_number=k[4],
+          elo=k[5]).update(
+              opening1_victory_count=F('opening1_victory_count') + v['opening1_victory_count'],
+              opening1_loss_count=F('opening1_loss_count') + v['opening1_loss_count'],
+              opening2_victory_count=F('opening2_victory_count') + v['opening2_victory_count'],
+              opening2_loss_count=F('opening2_loss_count') + v['opening2_loss_count'])
+      if updated_count == 0:
+        obj = OpeningEloWins(
+          opening1_id=k[0],
+          opening2_id=k[1],
+          map_id=k[2],
+          ladder_id=k[3],
+          patch_number=k[4],
+          elo=k[5],
+          opening1_victory_count=v['opening1_victory_count'],
+          opening1_loss_count=v['opening1_loss_count'],
+          opening2_victory_count=v['opening2_victory_count'],
+          opening2_loss_count=v['opening2_loss_count'])
+        openings_objs.append(obj)
+    if len(openings_objs):
+      OpeningEloWins.objects.bulk_create(openings_objs)
+    del openings_objs
+    del openings_data_dict
+
+    print('Serializing actions!')
+    actions_serializer.is_valid(raise_exception=True)
+    actions_input = actions_serializer.validated_data
+    def match_actions_generator():
+      for action in actions_input:
+        (yield MatchPlayerActions(**action))
+
+
+    print('Creating actions!')
+    actions = MatchPlayerActions.objects.bulk_create(match_actions_generator())
+
+    print('Creating opening elo techs dict')
+    previous_match_id = -2
+    previous_match = False
+    previous_match_openings = {}
+    techs = [tech.id for tech in Techs.objects.all().iterator()]
+    for action in actions:
+      #ignore techs we dont care about currently
+      if action.event_type != 3 or action.event_id not in techs:
+        continue
+      if action.match_id == previous_match_id:
+        match = previous_match
+      else:
+        match = Matches.objects.filter(id=action.match_id).first()
+      previous_match_openings = utils.build_opening_elo_techs_for_match_and_action(match, action, techs_data_dict, previous_match_id, previous_match_openings)
+      #update last match cache
+      previous_match_id = action.match_id
+      previous_match = match
+
+    print("Updating elo techs")
+    total = len(techs_data_dict)
+    print("Rows to modify: " + str(total))
+    techs_objs = []
+    for k,v in techs_data_dict.items():
+      # try update, else create object to insert with bulk create later
+      updated_count = OpeningEloTechs.objects.filter(
+          opening_id=k[0],
+          tech_id=k[1],
+          map_id=k[2],
+          ladder_id=k[3],
+          patch_number=k[4],
+          elo=k[5]).update(
+              average_time=(F('average_time') * F('count') + v['average_time'] * v['research_count']) / (F('count') + v['research_count']),
+              count = F('count') + v['research_count'])
+      # if no records were updated
+      if updated_count == 0:
+        obj = OpeningEloTechs(
+          opening_id=k[0],
+          tech_id=k[1],
+          map_id=k[2],
+          ladder_id=k[3],
+          patch_number=k[4],
+          elo=k[5],
+          average_time=v['average_time'],
+          count=v['research_count'])
+        techs_objs.append(obj)
+
+    if len(techs_objs):
+      OpeningEloTechs.objects.bulk_create(techs_objs)
+
+    end = time.time()
+    print(f"ImportMatches took {end-start} seconds to complete!")
+    return HttpResponse("You are loved <3", status=status.HTTP_201_CREATED)
