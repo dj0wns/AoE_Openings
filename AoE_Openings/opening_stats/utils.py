@@ -173,17 +173,21 @@ def opening_ids_to_openings_list(opening_ids) :
   openings = [total_openings[i] for i in opening_ids]
   return openings
 
-def generate_aggregate_statements_from_basic_openings():
+def generate_aggregate_statements_from_basic_openings(data):
   #Have to compare counts against basic strategies to enforce uniqueness
   aggregate_string = f'.aggregate(total=Sum(Case(When(Q(opening1_id__lt={len(Basic_Strategies)}) & Q(opening2_id__lt={len(Basic_Strategies)}), then=F("opening1_victory_count") + F("opening1_loss_count")))),'
-  strategies = Basic_Strategies + Followups
-  opening_id = 0
-  for opening in strategies:
-      aggregate_string+=f'{opening[0]}_total=Sum(Case('
+  #If user defined openings, then use those, otherwise use the basics
+  if len(data['include_opening_ids']) and data['include_opening_ids'][0] != -1:
+    strategies = data['include_opening_ids']
+  else:
+    strategies = range(len(Basic_Strategies + Followups))
+  for opening_id in strategies:
+      opening_name = OPENINGS[opening_id][0]
+      aggregate_string+=f'{opening_name}_total=Sum(Case('
       aggregate_string+=f'When(Q(opening1_id={opening_id}) & Q(opening2_id__lt={len(Basic_Strategies)}), then=F("opening1_victory_count") + F("opening1_loss_count")),'
       aggregate_string+=f'When(Q(opening2_id={opening_id}) & Q(opening1_id__lt={len(Basic_Strategies)}), then=F("opening2_victory_count") + F("opening2_loss_count")))),'
 
-      aggregate_string+=f'{opening[0]}_wins=Sum(Case('
+      aggregate_string+=f'{opening_name}_wins=Sum(Case('
       aggregate_string+=f'When(Q(opening1_id={opening_id}) & Q(opening2_id__lt={len(Basic_Strategies)}), then=F("opening1_victory_count")),'
       aggregate_string+=f'When(Q(opening2_id={opening_id}) & Q(opening1_id__lt={len(Basic_Strategies)}), then=F("opening2_victory_count")))),'
 
@@ -202,7 +206,7 @@ def generate_aggregate_statements_from_opening_matchups(data):
     strategies = range(len(Basic_Strategies));
   for i in strategies:
     opening1_name = OPENINGS[i][0]
-    for j in strategies[i:]:
+    for j in strategies[strategies.index(i):]:
       opening2_name = OPENINGS[j][0]
       aggregate_string+=f'{opening1_name}_vs_{opening2_name}_total=Sum(Case('
       aggregate_string+=f'When(Q(opening1_id={i}) & Q(opening2_id={j}), then=F("opening1_victory_count") + F("opening1_loss_count")),'
