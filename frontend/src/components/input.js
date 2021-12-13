@@ -76,7 +76,9 @@ class Input extends Component {
     var include_patch_ids = [];
     if (this.search_params.get('include_patch_ids')){
       include_patch_ids = this.search_params.get('include_patch_ids').split(",").map(Number);
-      include_patch_ids = this.formatArgumentsForMultiSelect(include_patch_ids, this.state.info.patches)
+      include_patch_ids = this.formatArgumentsForMultiSelect(include_patch_ids, this.state.info.patches);
+    } else {
+      include_patch_ids = [this.state.info.patches[0]];
     }
     var include_civ_ids = []
     if (this.search_params.get('include_civ_ids')){
@@ -316,11 +318,11 @@ class Input extends Component {
           <div class="form-row">
             <div class="form-group col-md-6 mx-auto">
               <label for="min_elo_value">Min Elo</label>
-              <input type="number" class="form-control" id="min_elo_value" name="min_elo_value" step="25" min="0" max="3000" value={this.state.min_elo_value} onChange={this.handle_change}/>
+              <input type="number" class="form-control" id="min_elo_value" name="min_elo_value" step="50" min="0" max="3000" value={this.state.min_elo_value} onChange={this.handle_change}/>
             </div>
             <div class="form-group col-md-6 mx-auto">
               <label for="max_elo_value">Max Elo</label>
-              <input type="number" class="form-control" id="max_elo_value" name="max_elo_value" step="25" min="0" max="3000" value={this.state.max_elo_value} onChange={this.handle_change}/>
+              <input type="number" class="form-control" id="max_elo_value" name="max_elo_value" step="50" min="0" max="3000" value={this.state.max_elo_value} onChange={this.handle_change}/>
             </div>
           </div>
           <div class="form-row">

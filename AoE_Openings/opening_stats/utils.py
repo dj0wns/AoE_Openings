@@ -2,7 +2,7 @@ import time
 import math
 
 from .AoE_Rec_Opening_Analysis.aoe_replay_stats import OpeningType
-from opening_stats.models import Matches, Techs, MatchPlayerActions, CivEloWins, OpeningEloWins, OpeningEloTechs
+from opening_stats.models import Matches, Techs, MatchPlayerActions, CivEloWins, OpeningEloWins, OpeningEloTechs, Patches
 
 ELO_DELTA = 50
 
@@ -102,7 +102,9 @@ def parse_standard_query_parameters(request, default_exclude_mirrors) :
   data['max_elo'] = int(request.GET.get('max_elo', "9000").split(",")[0])
   data['exclude_mirrors'] = request.GET.get('exclude_mirrors', str(default_exclude_mirrors)).split(",")[0].lower() == "true"
   data['include_ladder_ids'] = list(map(int, request.GET.get('include_ladder_ids', "-1").split(",")))
-  data['include_patch_ids'] = list(map(int, request.GET.get('include_patch_ids', "-1").split(",")))
+  #default to newest patch if none selected
+  data['include_patch_ids'] = list(map(int, request.GET.get('include_patch_ids', str(Patches.objects.all().last().id)).split(",")))
+
   data['include_map_ids'] = list(map(int, request.GET.get('include_map_ids', "-1").split(",")))
   data['include_civ_ids'] = list(map(int, request.GET.get('include_civ_ids', "-1").split(",")))
   data['exclude_civ_ids'] = list(map(int, request.GET.get('exclude_civ_ids', "-1").split(",")))
