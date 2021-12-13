@@ -68,7 +68,7 @@ class CivWinRates(generics.ListAPIView):
     if error:
       return HttpResponseBadRequest()
     aggregate_string = "CivEloWins.objects"
-    aggregate_string += utils.generate_filter_statements_from_parameters_for_civ_elo_wins(data)
+    aggregate_string += utils.generate_filter_statements_from_parameters(data)
     aggregate_string += '.aggregate('\
             'total=Sum("victory_count"),' #data only has games with a conclusion so only saves wins and its ezpz
     for name, value in aoe_data["civ_names"].items():
@@ -90,10 +90,10 @@ class OpeningWinRates(generics.ListAPIView):
     if error:
       return HttpResponseBadRequest()
     aggregate_string = "OpeningEloWins.objects"
-    aggregate_string += utils.generate_filter_statements_from_parameters_for_civ_elo_wins(data, include_opening_ids = False)
+    aggregate_string += utils.generate_filter_statements_from_parameters(data, include_opening_ids = False)
     # ignore openings mirrors
     #aggregate_string += ".exclude(opening1_id=F('opening2_id'))"
-    aggregate_string += utils.generate_aggregate_statements_from_basic_openings_new()
+    aggregate_string += utils.generate_aggregate_statements_from_basic_openings(data)
     matches = eval(aggregate_string)
     # convert counts to something more readable
     opening_list = utils.count_response_to_dict(matches)
@@ -107,8 +107,8 @@ class OpeningMatchups(generics.ListAPIView):
     if error:
       return HttpResponseBadRequest()
     aggregate_string = "OpeningEloWins.objects"
-    aggregate_string += utils.generate_filter_statements_from_parameters_for_civ_elo_wins(data, include_opening_ids = False)
-    aggregate_string += utils.generate_aggregate_statements_from_opening_matchups_new(data)
+    aggregate_string += utils.generate_filter_statements_from_parameters(data, include_opening_ids = False)
+    aggregate_string += utils.generate_aggregate_statements_from_opening_matchups(data)
     matches = eval(aggregate_string)
     # convert counts to something more readable
     opening_list = utils.count_response_to_dict(matches)
@@ -172,7 +172,7 @@ class OpeningTechs(generics.ListAPIView):
         return HttpResponseBadRequest()
 
     aggregate_string = "OpeningEloTechs.objects"
-    aggregate_string += utils.generate_filter_statements_from_parameters_for_civ_elo_wins(data, include_opening_ids = False)
+    aggregate_string += utils.generate_filter_statements_from_parameters(data, include_opening_ids = False)
     aggregate_string += '.filter(' #filter on only the tech ids we want
     for i in range(len(tech_ids)):
       aggregate_string += f'Q(tech_id={tech_ids[i]})'
