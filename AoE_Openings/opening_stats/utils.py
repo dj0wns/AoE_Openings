@@ -163,7 +163,8 @@ def mirror_vs_dict_names(data_list) :
     components = old_name.split("vs")
     name1 = " ".join(filter(None, components[0].split(" "))) #handy trick to fix formatting
     name2 = " ".join(filter(None, components[1].split(" "))) #handy trick to fix formatting
-    if name1 == name2: #dont duplicate mirrors
+    if name1 == name2: #dont duplicate mirrors, and also set winrate to -1 and let the front end handle it
+      data_list[i]['wins'] = -1
       continue
     dict2['name'] = name2 + ' vs ' + name1
     data_list.append(dict2)

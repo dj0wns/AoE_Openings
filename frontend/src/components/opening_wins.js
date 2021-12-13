@@ -1,5 +1,4 @@
-import React, {Component, PropTypes } from 'react';
-import queryString from 'query-string';
+import React, {Component} from 'react';
 import Input from './input';
 import DataTable from 'react-data-table-component';
 
@@ -54,6 +53,7 @@ class OpeningWins extends Component {
         {
           name: "Win Rate",
           selector: row => row.wins / row.total,
+          // if -1 just show 50%, else calculate the correct percent
           format: row => (row.wins / row.total * 100).toFixed(2)+'% (' + row.wins + ')',
           sortable: true,
         },

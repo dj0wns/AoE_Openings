@@ -32,7 +32,10 @@ class MetaSnapshotChart extends React.Component {
       return (
         <Plot
           data={this.state.graph_data.meta_list}
-          layout={ {title: 'Opening Playrate by Elo for Patch ' + this.state.graph_data.patch, responsive: true} }
+          layout={{title: 'Playrate of each Opening by Elo for Patch ' + this.state.graph_data.patch + ' on Arabia', responsive: true,
+                   xaxis: { title:"1v1 Elo"},
+                   yaxis: { title:"Percentage"},
+                   }}
           useResizeHandler= {true}
           style={{width:'%100', height: '%100'}}
         />

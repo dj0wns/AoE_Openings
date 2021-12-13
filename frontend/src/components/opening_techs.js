@@ -1,5 +1,4 @@
-import React, {Component, PropTypes } from 'react';
-import queryString from 'query-string';
+import React, {Component} from 'react';
 import Input from './input';
 import DataTable from 'react-data-table-component';
 import {format_game_time} from './utils';

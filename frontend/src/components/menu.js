@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navbar, NavItem, NavDropdown, MenuItem, Nav, Form, FormControl, Button } from 'react-bootstrap';
+import {Navbar, Nav} from 'react-bootstrap';
 import {default_query} from "./utils";
 
 const Menu = () => {
