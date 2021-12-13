@@ -51,10 +51,10 @@ class OpeningWins extends Component {
           sortable: true,
         },
         {
-          name: "Win Rate",
-          selector: row => row.wins / row.total,
+          name: "Win Rate (Ignoring Mirrors)",
+          selector: row => row.wins / (row.losses + row.wins),
           // if -1 just show 50%, else calculate the correct percent
-          format: row => (row.wins / row.total * 100).toFixed(2)+'% (' + row.wins + ')',
+          format: row => (row.wins / (row.losses + row.wins)  * 100).toFixed(2)+'% (' + row.wins + ')',
           sortable: true,
         },
         {

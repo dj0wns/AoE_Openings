@@ -89,7 +89,7 @@ Followups = [
     [
         "MAA_Range_Followup",
         [OpeningType.MaaSkirms.value, OpeningType.MaaArchers.value],
-        [OpeningType.FeudalScoutFollowup.value]
+        [OpeningType.AnyDrush.value, OpeningType.FeudalScoutFollowup.value]
     ],
 ]
 
@@ -190,8 +190,16 @@ def generate_aggregate_statements_from_basic_openings(data):
       aggregate_string+=f'When(Q(opening2_id={opening_id}) & Q(opening1_id__lt={len(Basic_Strategies)}), then=F("opening2_victory_count") + F("opening2_loss_count")))),'
 
       aggregate_string+=f'{opening_name}_wins=Sum(Case('
+      #ignore mirror wins
+      aggregate_string+=f'When(Q(opening1_id={opening_id}) & Q(opening2_id={opening_id}), then=0),'
       aggregate_string+=f'When(Q(opening1_id={opening_id}) & Q(opening2_id__lt={len(Basic_Strategies)}), then=F("opening1_victory_count")),'
       aggregate_string+=f'When(Q(opening2_id={opening_id}) & Q(opening1_id__lt={len(Basic_Strategies)}), then=F("opening2_victory_count")))),'
+
+      aggregate_string+=f'{opening_name}_losses=Sum(Case('
+      #ignore mirror wins
+      aggregate_string+=f'When(Q(opening1_id={opening_id}) & Q(opening2_id={opening_id}), then=0),'
+      aggregate_string+=f'When(Q(opening1_id={opening_id}) & Q(opening2_id__lt={len(Basic_Strategies)}), then=F("opening1_loss_count")),'
+      aggregate_string+=f'When(Q(opening2_id={opening_id}) & Q(opening1_id__lt={len(Basic_Strategies)}), then=F("opening2_loss_count")))),'
 
 
       opening_id += 1
@@ -435,8 +443,6 @@ def build_opening_elo_win_for_match(match, data_dict):
 # Run this function to build the opening elo wins table for quicker lookups
 def build_opening_elo_wins():
     start = time.time()
-    # drop all records and rebuild
-    OpeningEloWins.objects.all().delete()
 
     #Use tuples as key to store data in the interim
     # (opening1_id, opening2_id,map_id,ladder_id,patch_number,elo)
@@ -472,6 +478,8 @@ def build_opening_elo_wins():
                                   opening2_victory_count=v['opening2_victory_count'],
                                   opening2_loss_count=v['opening2_loss_count']))
 
+    # drop all records and rebuild
+    OpeningEloWins.objects.all().delete()
     OpeningEloWins.objects.bulk_create(generator())
     end = time.time()
     print("build_civ_elo_wins - elapsed time", end - start)
