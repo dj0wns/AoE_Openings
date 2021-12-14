@@ -1,9 +1,9 @@
 export function format_game_time(millis) {
   var minutes = Math.floor(millis / 60000);
   var seconds = ((millis % 60000) / 1000).toFixed(0);
-  if (seconds === 60) {
+  if (seconds === "60") {
     minutes += 1;
-    seconds = 0;
+    seconds = "0";
   }
   return minutes + ":" + (seconds < 10 ? '0' : '') + seconds
 }
