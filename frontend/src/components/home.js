@@ -9,6 +9,10 @@ class Home extends Component {
         <MetaSnapshotChart/>
         <h1 class='page-title'>Welcome to AoE Pulse!</h1>
         <div class='text-div'>
+          <h2>Update (Dec 14, 2021)</h2>
+          <p>
+            Variety of bug fixes and added an about page.
+          </p>
           <h2>Update (Dec 2, 2021)</h2>
           <p>
             Another large set of work to move the data from sqlite3 to postgres. Worlds faster and requests are no longer blocking so the site should feel a whole lot more responsive as a whole. Also added endpoints and infrastructure to update matches remotely, so now I can hide that behind a cron job rather than updating data every... few months by hand. Cheers!

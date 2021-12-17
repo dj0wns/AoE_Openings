@@ -1,4 +1,5 @@
 import React, {Component} from 'react';
+import About from './components/about'
 import Home from './components/home'
 import Civs from './components/civs'
 import OpeningWins from './components/opening_wins'
@@ -26,6 +27,7 @@ class App extends Component {
                       )
                   }}
               />
+              <Route path="/about" component={About}/>
               <Route path="/home" component={Home}/>
               <Route path="/civ_stats" component={Civs}/>
               <Route path="/opening_stats" component={OpeningWins}/>

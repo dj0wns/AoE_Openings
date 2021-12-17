@@ -16,6 +16,9 @@ const Menu = () => {
             <Nav.Link href={"/opening_matchups" + query}>Opening Matchups</Nav.Link>
             <Nav.Link href={"/opening_techs" + query}>Opening Tech Timings</Nav.Link>
           </Nav>
+          <Nav className='ml-auto'>
+            <Nav.Link href={"/about"}>About</Nav.Link>
+          </Nav>
         </Navbar.Collapse>
       </Navbar>
     </div>

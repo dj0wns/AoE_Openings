@@ -64,3 +64,8 @@
 .rdt_TableHeadRow {
   font-size:Large;
 }
+
+.copyright-text {
+  font-size:Small;
+  text-align: center;
+}
