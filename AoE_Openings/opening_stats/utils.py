@@ -1,5 +1,6 @@
 import time
 import math
+import gc
 
 from .AoE_Rec_Opening_Analysis.aoe_replay_stats import OpeningType
 from opening_stats.models import Matches, Techs, MatchPlayerActions, CivEloWins, OpeningEloWins, OpeningEloTechs, Patches
@@ -352,8 +353,9 @@ def build_civ_elo_wins():
     total = Matches.objects.all().count()
     count = 0
     for match in Matches.objects.all().iterator():
-        if count % 500 == 0:
+        if count % 5000 == 0:
           print (f'({count} / {total})')
+          gc.collect()
         count += 1
         if type(match.average_elo) == str:
           #at least one element has a string elo???? throw it away
@@ -478,8 +480,9 @@ def build_opening_elo_wins():
     total = Matches.objects.all().count()
     count = 0
     for match in Matches.objects.all().iterator():
-        if count % 500 == 0:
+        if count % 5000 == 0:
           print (f'({count} / {total})')
+          gc.collect()
         count += 1
         if type(match.average_elo) == str:
           #at least one element has a string elo???? throw it away
@@ -673,8 +676,9 @@ def build_opening_elo_techs():
     previous_match_openings = {}
 
     for match_player_action in MatchPlayerActions.objects.select_related('match').all().iterator():
-        if count % 500 == 0:
+        if count % 5000 == 0:
           print (f'({count} / {total}) with {len(data_dict)} elements.')
+          gc.collect()
         count += 1
         if match_player_action.event_type != 3 or match_player_action.event_id not in techs:
           continue
