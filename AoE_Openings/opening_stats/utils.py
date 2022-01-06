@@ -13,6 +13,7 @@ Updated_Tech_Names = {
   102:'Castle Age'
 }
 
+#Need to update all bucket tables after modifying these
 Basic_Strategies = [
     #General Openings
     [
@@ -41,6 +42,7 @@ Basic_Strategies = [
     ],
 ]
 
+#Need to update all bucket tables after modifying these
 Followups = [
     #Specific Openings and followups
     [
@@ -90,6 +92,22 @@ Followups = [
         "MAA_Range_Followup",
         [OpeningType.MaaSkirms.value, OpeningType.MaaArchers.value],
         [OpeningType.AnyDrush.value, OpeningType.FeudalScoutFollowup.value]
+    ],
+    #ALWAYS MAKE SURE THESE ARE THE LAST 2 OPENINGS
+    [
+        "Straight_FC",
+        [OpeningType.FastCastle.value],
+        [OpeningType.AnyDrush.value,
+         OpeningType.FeudalScoutOpening.value,
+         OpeningType.Maa.value,
+         OpeningType.FeudalArcherOpening.value,
+         OpeningType.FeudalSkirmOpening.value]
+    ],
+    [
+        "Unknown",
+        #never triggers, manually set
+        [OpeningType.Unused.value
+        ], [OpeningType.Unused.value]
     ],
 ]
 
@@ -177,7 +195,8 @@ def opening_ids_to_openings_list(opening_ids) :
 
 def generate_aggregate_statements_from_basic_openings(data):
   #Have to compare counts against basic strategies to enforce uniqueness
-  aggregate_string = f'.aggregate(total=Sum(Case(When(Q(opening1_id__lt={len(Basic_Strategies)}) & Q(opening2_id__lt={len(Basic_Strategies)}), then=F("opening1_victory_count") + F("opening1_loss_count")))),'
+  aggregate_string = f'.aggregate(total=Sum(Case(When((Q(opening1_id__lt={len(Basic_Strategies)}) | Q(opening1_id__gte={len(OPENINGS)-2}))' \
+                     f' & (Q(opening2_id__lt={len(Basic_Strategies)}) | Q(opening2_id__gte={len(OPENINGS)-2})), then=F("opening1_victory_count") + F("opening1_loss_count")))),'
   #If user defined openings, then use those, otherwise use the basics
   if len(data['include_opening_ids']) and data['include_opening_ids'][0] != -1:
     strategies = data['include_opening_ids']
@@ -186,20 +205,22 @@ def generate_aggregate_statements_from_basic_openings(data):
   for opening_id in strategies:
       opening_name = OPENINGS[opening_id][0]
       aggregate_string+=f'{opening_name}_total=Sum(Case('
-      aggregate_string+=f'When(Q(opening1_id={opening_id}) & Q(opening2_id__lt={len(Basic_Strategies)}), then=F("opening1_victory_count") + F("opening1_loss_count")),'
-      aggregate_string+=f'When(Q(opening2_id={opening_id}) & Q(opening1_id__lt={len(Basic_Strategies)}), then=F("opening2_victory_count") + F("opening2_loss_count")))),'
+      #need to count each player twice in the case of mirrors
+      aggregate_string+=f'When(Q(opening1_id={opening_id}) & Q(opening2_id={opening_id}), then=F("opening1_victory_count") + F("opening1_loss_count") + F("opening2_victory_count") + F("opening2_loss_count")),'
+      aggregate_string+=f'When(Q(opening1_id={opening_id}) & (Q(opening2_id__lt={len(Basic_Strategies)}) | Q(opening2_id__gte={len(OPENINGS)-2})), then=F("opening1_victory_count") + F("opening1_loss_count")),'
+      aggregate_string+=f'When(Q(opening2_id={opening_id}) & (Q(opening1_id__lt={len(Basic_Strategies)}) | Q(opening1_id__gte={len(OPENINGS)-2})), then=F("opening2_victory_count") + F("opening2_loss_count")))),'
 
       aggregate_string+=f'{opening_name}_wins=Sum(Case('
       #ignore mirror wins
       aggregate_string+=f'When(Q(opening1_id={opening_id}) & Q(opening2_id={opening_id}), then=0),'
-      aggregate_string+=f'When(Q(opening1_id={opening_id}) & Q(opening2_id__lt={len(Basic_Strategies)}), then=F("opening1_victory_count")),'
-      aggregate_string+=f'When(Q(opening2_id={opening_id}) & Q(opening1_id__lt={len(Basic_Strategies)}), then=F("opening2_victory_count")))),'
+      aggregate_string+=f'When(Q(opening1_id={opening_id}) & (Q(opening2_id__lt={len(Basic_Strategies)}) | Q(opening2_id__gte={len(OPENINGS)-2})), then=F("opening1_victory_count")),'
+      aggregate_string+=f'When(Q(opening2_id={opening_id}) & (Q(opening1_id__lt={len(Basic_Strategies)}) | Q(opening1_id__gte={len(OPENINGS)-2})), then=F("opening2_victory_count")))),'
 
       aggregate_string+=f'{opening_name}_losses=Sum(Case('
       #ignore mirror wins
       aggregate_string+=f'When(Q(opening1_id={opening_id}) & Q(opening2_id={opening_id}), then=0),'
-      aggregate_string+=f'When(Q(opening1_id={opening_id}) & Q(opening2_id__lt={len(Basic_Strategies)}), then=F("opening1_loss_count")),'
-      aggregate_string+=f'When(Q(opening2_id={opening_id}) & Q(opening1_id__lt={len(Basic_Strategies)}), then=F("opening2_loss_count")))),'
+      aggregate_string+=f'When(Q(opening1_id={opening_id}) & (Q(opening2_id__lt={len(Basic_Strategies)}) | Q(opening2_id__gte={len(OPENINGS)-2})), then=F("opening1_loss_count")),'
+      aggregate_string+=f'When(Q(opening2_id={opening_id}) & (Q(opening1_id__lt={len(Basic_Strategies)}) | Q(opening1_id__gte={len(OPENINGS)-2})), then=F("opening2_loss_count")))),'
 
 
       opening_id += 1
@@ -322,8 +343,6 @@ def build_civ_elo_win_for_match(match, data_dict):
 # Run this function to build the civ elo wins table for quicker lookups
 def build_civ_elo_wins():
     start = time.time()
-    # drop all records and rebuild
-    CivEloWins.objects.all().delete()
 
     #Use tuples as key to store data in the interim
     # (civ_id,map_id,ladder_id,patch_number,elo) ... ["victory_count", "loss_count"]
@@ -356,6 +375,9 @@ def build_civ_elo_wins():
                                   elo=k[4],
                                   victory_count=v['victory_count'],
                                   loss_count=v['loss_count']))
+
+    # drop all previous records and rebuild
+    CivEloWins.objects.all().delete()
 
     print("Inserting Objects")
     CivEloWins.objects.bulk_create(objects)
@@ -405,6 +427,9 @@ def build_opening_elo_win_for_match(match, data_dict):
             if valid_opening:
                 valid_openings.append(opening_index)
             opening_index += 1
+        if not len(valid_openings):
+          # Append the unknown opening
+          valid_openings.append(len(OPENINGS)-1)
         player_openings.append(valid_openings)
     #round down to nearest delta
     elo = ELO_DELTA * math.floor(match.average_elo/ELO_DELTA)
@@ -532,6 +557,9 @@ def build_opening_elo_techs_for_match_and_action(match, action, data_dict, previ
                 if valid_opening:
                     player_openings[player_id].append(opening_index)
                 opening_index += 1
+            if not len(player_openings[player_id]):
+                # Append the unknown opening
+                player_openings[player_id].append(len(OPENINGS)-1)
     #round down to nearest delta
     elo = ELO_DELTA * math.floor(match.average_elo/ELO_DELTA)
     #get techs for match id
@@ -553,7 +581,7 @@ def build_opening_elo_techs_for_match_and_action(match, action, data_dict, previ
         data_dict[key]['research_count'] += 1
     return player_openings
 
-def build_opening_elo_techs_for_mpa_match(match, data_dict, previous_match_id, previous_match_openings):
+def build_opening_elo_techs_for_mpa_match(match, match_player_action, data_dict, previous_match_id, previous_match_openings):
     #round down to nearest delta
     elo = ELO_DELTA * math.floor(match.average_elo/ELO_DELTA)
     if match.id == previous_match_id and match_player_action.player_id in previous_match_openings:
@@ -601,6 +629,9 @@ def build_opening_elo_techs_for_mpa_match(match, data_dict, previous_match_id, p
                 if valid_opening:
                     player_openings[player_id].append(opening_index)
                 opening_index += 1
+            if not len(player_openings[player_id]):
+                # Append the unknown opening
+                player_openings[player_id].append(len(OPENINGS)-1)
     #round down to nearest delta
     elo = ELO_DELTA * math.floor(match.average_elo/ELO_DELTA)
     #get techs for match id
@@ -625,8 +656,6 @@ def build_opening_elo_techs_for_mpa_match(match, data_dict, previous_match_id, p
 # Run this function to build the opening elo techs table for quicker lookups
 def build_opening_elo_techs():
     start = time.time()
-    # drop all records and rebuild
-    OpeningEloTechs.objects.all().delete()
 
     #Use tuples as key to store data in the interim
     # (opening1_id, opening2_id,map_id,ladder_id,patch_number,elo)
@@ -653,7 +682,7 @@ def build_opening_elo_techs():
         if type(match.average_elo) == str:
           #at least one element has a string elo???? throw it away
           continue
-        previous_match_openings = build_opening_elo_techs_for_match(match, data_dict, previous_match_id, previous_match_openings)
+        previous_match_openings = build_opening_elo_techs_for_mpa_match(match, match_player_action, data_dict, previous_match_id, previous_match_openings)
         previous_match_id = match.id
 
     # Now insert records into db
@@ -671,6 +700,8 @@ def build_opening_elo_techs():
                                    average_time=v['average_time'],
                                    count=v['research_count']))
 
+    # drop all records and rebuild
+    OpeningEloTechs.objects.all().delete()
     OpeningEloTechs.objects.bulk_create(generator())
     end = time.time()
     print("build_opening_elo_techs - elapsed time", end - start)

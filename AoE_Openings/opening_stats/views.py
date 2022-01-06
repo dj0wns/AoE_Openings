@@ -132,6 +132,8 @@ class MetaSnapshot(generics.ListAPIView):
     for i in range(min_elo, max_elo, bucket_size):
       for j in range(len(utils.Basic_Strategies)):
         aggregate_string += f'{utils.Basic_Strategies[j][0]}_{i}=Sum(Case('
+        #have to double count mirrors
+        aggregate_string+=f'When(Q(elo={i}) & Q(opening1_id={j}) & Q(opening2_id={j}), then=F("opening1_victory_count") + F("opening1_loss_count") + F("opening2_victory_count") + F("opening2_loss_count")),'
         aggregate_string+=f'When(Q(elo={i}) & Q(opening1_id={j}) & Q(opening2_id__lt={len(utils.Basic_Strategies)}), then=F("opening1_victory_count") + F("opening1_loss_count")),'
         aggregate_string+=f'When(Q(elo={i}) & Q(opening2_id={j}) & Q(opening1_id__lt={len(utils.Basic_Strategies)}), then=F("opening1_victory_count") + F("opening1_loss_count")),'
         aggregate_string += "))," #close Sum(Case())
