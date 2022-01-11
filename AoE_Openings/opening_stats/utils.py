@@ -706,6 +706,6 @@ def build_opening_elo_techs():
 
     # drop all records and rebuild
     OpeningEloTechs.objects.all().delete()
-    OpeningEloTechs.objects.bulk_create(generator())
+    OpeningEloTechs.objects.bulk_create(generator(), batch_size=10000)
     end = time.time()
     print("build_opening_elo_techs - elapsed time", end - start)
