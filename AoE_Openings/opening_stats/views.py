@@ -196,6 +196,21 @@ class OpeningTechs(generics.ListAPIView):
     content = JSONRenderer().render(out_dict)
     return HttpResponse(content)
 
+class Advanced(views.APIView):
+  def post(self, request, format=None):
+    data, error = utils.parse_advanced_post_parameters(request, True)
+    if error:
+      return HttpResponseBadRequest()
+    result = utils.EnqueueOrCheckAdvancedRequest(data)
+    out_dict = {'position':-1,
+                'result':""}
+    if type(result) is str:
+      out_dict['result'] = result
+    else:
+      out_dict['position'] = result
+    content = JSONRenderer().render(out_dict)
+    return HttpResponse(content)
+
 class ImportMatches(views.APIView):
   permission_classes = [HasAPIKey]
   def post (self, request, format=None):

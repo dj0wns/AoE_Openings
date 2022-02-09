@@ -12,6 +12,7 @@ urlpatterns = [
     path('opening_techs/', views.OpeningTechs.as_view(), name='opening_techs-list'),
     path('meta_snapshot/', views.MetaSnapshot.as_view(), name='meta_snapshot-list'),
     path('last_uploaded_match/', views.LastUploadedMatch.as_view(), name='last_uploaded_match-list'),
+    path('advanced/', views.Advanced.as_view(), name='advanced-list'),
     #POST
     path('import_matches/', views.ImportMatches.as_view(), name='import_matches-list'),
 ]

@@ -1,9 +1,10 @@
 import time
 import math
 import gc
+import urllib
 
 from .AoE_Rec_Opening_Analysis.aoe_replay_stats import OpeningType
-from opening_stats.models import Matches, Techs, MatchPlayerActions, CivEloWins, OpeningEloWins, OpeningEloTechs, Patches
+from opening_stats.models import Matches, Techs, MatchPlayerActions, CivEloWins, OpeningEloWins, OpeningEloTechs, Patches, AdvancedQueryQueue
 
 ELO_DELTA = 50
 
@@ -114,6 +115,30 @@ Followups = [
 
 OPENINGS = Basic_Strategies + Followups
 
+def data_dict_to_query_string(data):
+  string = ""
+  #sort alpha
+  sorted_keys = sorted(data.keys(), key=lambda x:x.lower())
+  for key in sorted_keys:
+    string += f'{key}='
+    if type(data[key]) is list:
+      string += ','.join([str(i) for i in sorted(data[key])])
+    else:
+      string += str(data[key])
+    string += '&'
+  return string
+
+def query_string_to_data_dict(string):
+  ret_dict = dict(urllib.parse.parse_qsl(string))
+  #fix data to lists for relevant fields
+  for k,v in ret_dict.items():
+    if k == 'max_elo' or k == 'min_elo' or k == 'exclude_mirrors':
+      continue
+    #rest are lists
+    ret_dict[k] = [int(i) for i in v.split(",")]
+  return ret_dict
+
+
 def parse_standard_query_parameters(request, default_exclude_mirrors) :
   data = {}
   error_code = False
@@ -131,6 +156,41 @@ def parse_standard_query_parameters(request, default_exclude_mirrors) :
   data['include_opening_ids'] = list(map(int, request.GET.get('include_opening_ids', "-1").split(",")))
   data['include_tech_ids'] = list(map(int, request.GET.get('include_tech_ids', "-1").split(",")))
   data['include_player_ids'] = list(map(int, request.GET.get('include_player_ids', "-1").split(",")))
+
+  #Now validate data
+  if data['min_elo'] < 0 or data['min_elo'] > 9000 or data['min_elo'] % 25:
+    error_code = 400
+  if data['max_elo'] < 0 or data['max_elo'] > 9000 or data['max_elo'] % 25:
+    error_code = 400
+  #TODO Add more db level validations
+  return data, error_code
+
+def check_list_of_ints(value):
+  if not isinstance(value, list):
+    return False
+  if not all(isinstance(item, int) for item in value):
+    return False
+  return True
+
+def parse_advanced_post_parameters(request, default_exclude_mirrors) :
+  data = {}
+  error_code = False
+  data['min_elo'] = int(request.data.get('min_elo', "0").split(",")[0])
+  data['max_elo'] = int(request.data.get('max_elo', "9000").split(",")[0])
+  data['include_ladder_ids'] = request.data.get('include_ladder_ids', [-1])
+  error_code = False if check_list_of_ints(data['include_ladder_ids']) else 400
+  #default to newest patch if none selected
+  data['include_patch_ids'] = request.data.get('include_patch_ids', [-1])
+  error_code = False if check_list_of_ints(data['include_patch_ids']) else 400
+
+  data['include_map_ids'] = request.data.get('include_map_ids', [-1])
+  error_code = False if check_list_of_ints(data['include_map_ids']) else 400
+  #Allow up to 3 sets of players per query
+  for i in range(6):
+    data[f'include_civ_ids_{i}'] = request.data.get(f'include_civ_ids_{i}', [-1])
+    error_code = False if check_list_of_ints(data[f'include_civ_ids_{i}']) else 400
+    data[f'include_opening_ids_{i}'] = request.data.get(f'include_opening_ids_{i}', [-1])
+    error_code = False if check_list_of_ints(data[f'include_opening_ids_{i}']) else 400
 
   #Now validate data
   if data['min_elo'] < 0 or data['min_elo'] > 9000 or data['min_elo'] % 25:
@@ -189,10 +249,26 @@ def mirror_vs_dict_names(data_list) :
     dict2['name'] = name2 + ' vs ' + name1
     data_list.append(dict2)
 
-def opening_ids_to_openings_list(opening_ids) :
+def opening_ids_to_openings_list(opening_ids):
   total_openings = Basic_Strategies + Followups
   openings = [total_openings[i] for i in opening_ids]
   return openings
+
+def EnqueueOrCheckAdvancedRequest(data):
+  query = data_dict_to_query_string(data)
+  adv_query = AdvancedQueryQueue.objects.filter(query=query, stale=False).first()
+  if adv_query is None:
+    #doesnt exist add a new one to the queue
+    adv_query = AdvancedQueryQueue(query=query)
+    adv_query.save()
+  else:
+    if adv_query.result is not None:
+      return adv_query.result
+  #now report depth in queue or return result id if complete
+  ids_in_queue = AdvancedQueryQueue.objects.filter(stale=False).order_by('id').values('id')
+  ids_in_queue = [i['id'] for i in ids_in_queue]
+  position_in_queue = list(ids_in_queue).index(adv_query.id)
+  return position_in_queue
 
 def generate_aggregate_statements_from_basic_openings(data):
   #Have to compare counts against basic strategies to enforce uniqueness
