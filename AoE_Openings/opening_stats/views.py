@@ -5,12 +5,13 @@ from django.views.decorators.cache import never_cache
 from rest_framework import generics, views, status
 from rest_framework.renderers import JSONRenderer
 from rest_framework_api_key.permissions import HasAPIKey
-from opening_stats.models import Openings, Matches, MatchPlayerActions, Maps, Techs, Ladders, Patches, CivEloWins, OpeningEloWins, OpeningEloTechs, Players
+from opening_stats.models import Openings, Matches, MatchPlayerActions, Maps, Techs, Ladders, Patches, CivEloWins, OpeningEloWins, OpeningEloTechs, Players, AdvancedQueryResults
 from opening_stats.serializers import OpeningsSerializer, MatchesSerializer, MatchInputSerializer, TestSerializer, MatchPlayerActionsSerializer, PlayersSerializer, PatchesSerializer
 from . import utils
 import os
 import json
 import time
+import uuid
 
 with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'AoE_Rec_Opening_Analysis', 'aoe2techtree', 'data','data.json')) as json_file:
   aoe_data = json.load(json_file)
@@ -197,6 +198,20 @@ class OpeningTechs(generics.ListAPIView):
     return HttpResponse(content)
 
 class Advanced(views.APIView):
+  def get(self, request):
+    request_id = request.GET.get('id',"")
+    try:
+      uuid_key = uuid.UUID(request_id, version=4)
+    except ValueError:
+      return HttpResponseBadRequest()
+    result = AdvancedQueryResults.objects.get(pk=uuid_key)
+    if result is None:
+      return HttpResponseBadRequest()
+    query = result.advancedqueryqueue_set.first().query
+    ret_dict = {'result':result.data, 'query':query}
+    content = JSONRenderer().render(ret_dict)
+    return HttpResponse(content)
+
   def post(self, request, format=None):
     data, error = utils.parse_advanced_post_parameters(request, True)
     if error:
