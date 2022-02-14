@@ -178,8 +178,8 @@ def check_list_of_ints(value):
 def parse_advanced_post_parameters(request, default_exclude_mirrors) :
   data = {}
   error_code = False
-  data['min_elo'] = int(request.data.get('min_elo', "0").split(",")[0])
-  data['max_elo'] = int(request.data.get('max_elo', "9000").split(",")[0])
+  data['min_elo'] = request.data.get('min_elo', 0)
+  data['max_elo'] = request.data.get('max_elo', 3000)
   data['include_ladder_ids'] = request.data.get('include_ladder_ids', [-1])
   error_code = False if check_list_of_ints(data['include_ladder_ids']) else 400
   #default to newest patch if none selected
@@ -196,6 +196,12 @@ def parse_advanced_post_parameters(request, default_exclude_mirrors) :
     error_code = False if check_list_of_ints(data[f'include_opening_ids_{i}']) else 400
 
   #Now validate data
+  if not isinstance(data['min_elo'], int):
+    error_code = 400
+  if not isinstance(data['max_elo'], int):
+    error_code = 400
+  if error_code:
+    return data, error_code
   if data['min_elo'] < 0 or data['min_elo'] > 9000 or data['min_elo'] % 25:
     error_code = 400
   if data['max_elo'] < 0 or data['max_elo'] > 9000 or data['max_elo'] % 25:

@@ -6,6 +6,7 @@ import OpeningWins from './components/opening_wins'
 import OpeningTechs from './components/opening_techs'
 import OpeningMatchups from './components/opening_matchups'
 import Menu from './components/menu'
+import Advanced from './components/advanced'
 import { BrowserRouter, Route, Switch, Redirect } from 'react-router-dom';
 
 class App extends Component {
@@ -33,6 +34,7 @@ class App extends Component {
               <Route path="/opening_stats" component={OpeningWins}/>
               <Route path="/opening_matchups" component={OpeningMatchups}/>
               <Route path="/opening_techs" component={OpeningTechs}/>
+              <Route path="/advanced" component={Advanced}/>
             </Switch>
           </div>
         </BrowserRouter>
