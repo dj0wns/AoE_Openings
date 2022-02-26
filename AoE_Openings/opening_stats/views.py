@@ -1,6 +1,7 @@
 from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
 from django.shortcuts import render
 from django.db.models import F, Count, Case, When, Q, Sum, Avg, Value, FloatField
+from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from rest_framework import generics, views, status
 from rest_framework.renderers import JSONRenderer

@@ -414,9 +414,11 @@ def generate_aggregate_statements_for_advanced_queue(data):
       data[f'include_opening_ids_{i+1}'] = []
     if f'include_civ_ids_{i+1}' not in data:
       data[f'include_civ_ids_{i+1}'] = []
-    p1_strings = generate_q_parameters_for_player(1, data[f'include_opening_ids_{i}'], data[f'include_civ_ids_{i}'])
-    p2_strings = generate_q_parameters_for_player(2, data[f'include_opening_ids_{i+1}'], data[f'include_civ_ids_{i+1}'])
-    if not len(p1_strings) + len(p2_strings):
+    left_strings_p1 = generate_q_parameters_for_player(1, data[f'include_opening_ids_{i}'], data[f'include_civ_ids_{i}'])
+    left_strings_p2 = generate_q_parameters_for_player(2, data[f'include_opening_ids_{i}'], data[f'include_civ_ids_{i}'])
+    right_strings_p1 = generate_q_parameters_for_player(1, data[f'include_opening_ids_{i+1}'], data[f'include_civ_ids_{i+1}'])
+    right_strings_p2 = generate_q_parameters_for_player(2, data[f'include_opening_ids_{i+1}'], data[f'include_civ_ids_{i+1}'])
+    if not len(left_strings_p1) + len(right_strings_p2):
       #if neither has any selections, skip
       continue
     matchup_name = civ_and_opening_ids_to_string(data[f'include_civ_ids_{i}'], data[f'include_opening_ids_{i}'])
@@ -425,38 +427,65 @@ def generate_aggregate_statements_for_advanced_queue(data):
     suffix = f'___{i}'
     #total matches
     aggregate_string += f'{matchup_name}_total_{suffix}=Count(Case(When('
-    if p1_strings:
-      aggregate_string += p1_strings
-    if p1_strings and p2_strings:
+    if left_strings_p1:
+      aggregate_string += left_strings_p1
+    if left_strings_p1 and right_strings_p2:
       aggregate_string += '&'
-    if p2_strings:
-      aggregate_string += p2_strings
-    #close when, case, count
+    if right_strings_p2:
+      aggregate_string += right_strings_p2
+    aggregate_string += ',then=1),'
+    #close when, do other side
+    aggregate_string += 'When('
+    if left_strings_p2:
+      aggregate_string += left_strings_p2
+    if left_strings_p2 and right_strings_p1:
+      aggregate_string += '&'
+    if right_strings_p1:
+      aggregate_string += right_strings_p1
     aggregate_string += ',then=1))),'
 
     #p1 wins
     aggregate_string += f'{matchup_name}_wins_{suffix}=Count(Case(When('
-    if p1_strings:
-      aggregate_string += p1_strings
-    if p1_strings and p2_strings:
+    if left_strings_p1:
+      aggregate_string += left_strings_p1
+    if left_strings_p1 and right_strings_p2:
       aggregate_string += '&'
-    if p2_strings:
-      aggregate_string += p2_strings
+    if right_strings_p2:
+      aggregate_string += right_strings_p2
     aggregate_string += '& Q(player1_victory=True)'
-    #close when, case, count
+    aggregate_string += ',then=1),'
+    #close when, do other side
+    aggregate_string += 'When('
+    if left_strings_p2:
+      aggregate_string += left_strings_p2
+    if left_strings_p2 and right_strings_p1:
+      aggregate_string += '&'
+    if right_strings_p1:
+      aggregate_string += right_strings_p1
+    aggregate_string += '& Q(player2_victory=True)'
     aggregate_string += ',then=1))),'
 
     #p1 losses
     aggregate_string += f'{matchup_name}_losses_{suffix}=Count(Case(When('
-    if p1_strings:
-      aggregate_string += p1_strings
-    if p1_strings and p2_strings:
+    if left_strings_p1:
+      aggregate_string += left_strings_p1
+    if left_strings_p1 and right_strings_p2:
       aggregate_string += '&'
-    if p2_strings:
-      aggregate_string += p2_strings
+    if right_strings_p2:
+      aggregate_string += right_strings_p2
     aggregate_string += '& Q(player1_victory=False)'
-    #close when, case, count
+    aggregate_string += ',then=1),'
+    #close when, do other side
+    aggregate_string += 'When('
+    if left_strings_p2:
+      aggregate_string += left_strings_p2
+    if left_strings_p2 and right_strings_p1:
+      aggregate_string += '&'
+    if right_strings_p1:
+      aggregate_string += right_strings_p1
+    aggregate_string += '& Q(player2_victory=False)'
     aggregate_string += ',then=1))),'
+
   #close aggregate
   aggregate_string += ')'
   return aggregate_string
@@ -467,7 +496,7 @@ def generate_aggregate_statements_from_basic_openings(data):
   aggregate_string = f'.aggregate(total=Sum(Case(When((Q(opening1_id__lt={len(Basic_Strategies)}) | Q(opening1_id__gte={len(OPENINGS)-2}))' \
                      f' & (Q(opening2_id__lt={len(Basic_Strategies)}) | Q(opening2_id__gte={len(OPENINGS)-2})), then=F("opening1_victory_count") + F("opening1_loss_count")))),'
   #If user defined openings, then use those, otherwise use the basics
-  if len(data['iNclude_opening_ids']) and data['include_opening_ids'][0] != -1:
+  if len(data['include_opening_ids']) and data['include_opening_ids'][0] != -1:
     strategies = data['include_opening_ids']
   else:
     strategies = range(len(Basic_Strategies + Followups))
