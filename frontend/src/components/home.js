@@ -9,7 +9,7 @@ class Home extends Component {
         <MetaSnapshotChart/>
         <h1 class='page-title'>Welcome to AoE Pulse!</h1>
         <div class='text-div'>
-          <h2>Update (Jan 5, 2021)</h2>
+          <h2>Update (Jan 5, 2022)</h2>
           <p>
             Added Straight FC and Unknown openings types to better represent the playerbase (not shown in graph). Openings matchup mirrors were also only half counted in play rate so this has been fixed. You may see a few percent changes in the above graph and on the Opening Stats page. Also added a small about page.
           </p>

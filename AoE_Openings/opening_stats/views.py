@@ -5,12 +5,13 @@ from django.views.decorators.cache import never_cache
 from rest_framework import generics, views, status
 from rest_framework.renderers import JSONRenderer
 from rest_framework_api_key.permissions import HasAPIKey
-from opening_stats.models import Openings, Matches, MatchPlayerActions, Maps, Techs, Ladders, Patches, CivEloWins, OpeningEloWins, OpeningEloTechs, Players
+from opening_stats.models import Openings, Matches, MatchPlayerActions, Maps, Techs, Ladders, Patches, CivEloWins, OpeningEloWins, OpeningEloTechs, Players, AdvancedQueryResults
 from opening_stats.serializers import OpeningsSerializer, MatchesSerializer, MatchInputSerializer, TestSerializer, MatchPlayerActionsSerializer, PlayersSerializer, PatchesSerializer
 from . import utils
 import os
 import json
 import time
+import uuid
 
 with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'AoE_Rec_Opening_Analysis', 'aoe2techtree', 'data','data.json')) as json_file:
   aoe_data = json.load(json_file)
@@ -193,6 +194,36 @@ class OpeningTechs(generics.ListAPIView):
     opening_list = utils.count_tech_response_to_dict(matches, aoe_data)
     out_dict = {"total":matches["total"], "openings_list":opening_list}
     # convert counts to something more readable
+    content = JSONRenderer().render(out_dict)
+    return HttpResponse(content)
+
+class Advanced(views.APIView):
+  def get(self, request):
+    request_id = request.GET.get('id',"")
+    try:
+      uuid_key = uuid.UUID(request_id, version=4)
+    except ValueError:
+      return HttpResponseBadRequest()
+    result = AdvancedQueryResults.objects.get(pk=uuid_key)
+    if result is None:
+      return HttpResponseBadRequest()
+    query = result.advancedqueryqueue_set.first().query
+    result_list = utils.count_response_to_dict(result.data)
+    ret_dict = {'result':result_list, 'query':query}
+    content = JSONRenderer().render(ret_dict)
+    return HttpResponse(content)
+
+  def post(self, request, format=None):
+    data, error = utils.parse_advanced_post_parameters(request, True)
+    if error:
+      return HttpResponseBadRequest()
+    result = utils.EnqueueOrCheckAdvancedRequest(data)
+    out_dict = {'position':-1,
+                'result':""}
+    if type(result) is uuid.UUID:
+      out_dict['result'] = result
+    else:
+      out_dict['position'] = result
     content = JSONRenderer().render(out_dict)
     return HttpResponse(content)
 

@@ -1,12 +1,30 @@
-# This is an auto-generated Django model module.
+#This is an auto-generated Django model module.
 # You'll have to do the following manually to clean this up:
 #   * Rearrange models' order
 #   * Make sure each model has one field with primary_key=True
 #   * Make sure each ForeignKey and OneToOneField has `on_delete` set to the desired behavior
 #   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
 # Feel free to rename the models, but don't rename db_table values or field names.
+import uuid
 from django.db import models
 
+class AdvancedQueryResults(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    data = models.JSONField(null=False)
+
+class AdvancedQueryQueue(models.Model):
+    time = models.DateTimeField(auto_now_add=True)
+    time_completed = models.DateTimeField(null=True)
+    last_checkin = models.DateTimeField(auto_now_add=True)
+    stale = models.BooleanField(default=False, null=True)
+    result = models.ForeignKey('AdvancedQueryResults', on_delete=models.CASCADE, null=True)
+    query = models.TextField()
+
+    class Meta:
+        db_table = 'advanced_query_queue'
+        indexes = [
+          models.Index(fields=['stale','query']),
+          ]
 
 class MatchPlayerActions(models.Model):
     match = models.ForeignKey('Matches', on_delete=models.CASCADE)
