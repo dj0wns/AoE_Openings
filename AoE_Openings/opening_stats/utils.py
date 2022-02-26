@@ -1,6 +1,8 @@
 import time
 import math
 import gc
+import os
+import json
 import urllib
 
 from django.db.models import F, Count, Case, When, Q, Sum, Avg, Value, FloatField
@@ -11,7 +13,7 @@ ELO_DELTA = 50
 
 TIME_BUCKET_DELTA = 25000 #millis
 
-ADVANCED_QUERY_COUNT = 3
+ADVANCED_QUERY_COUNT = 50
 
 Updated_Tech_Names = {
   101:'Feudal Age',
@@ -118,6 +120,16 @@ Followups = [
 
 OPENINGS = Basic_Strategies + Followups
 
+CIV_IDS_TO_NAMES = {}
+
+with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'AoE_Rec_Opening_Analysis', 'aoe2techtree', 'data','data.json')) as json_file:
+  aoe_data = json.load(json_file)
+  for name, value in aoe_data["civ_names"].items():
+    CIV_IDS_TO_NAMES[int(value) - 10270] = name
+
+
+
+
 def data_dict_to_query_string(data):
   string = ""
   #sort alpha
@@ -194,6 +206,11 @@ def parse_advanced_post_parameters(request, default_exclude_mirrors) :
     error_code = False if check_list_of_ints(data[f'include_civ_ids_{i}']) else 400
     data[f'include_opening_ids_{i}'] = request.data.get(f'include_opening_ids_{i}', [-1])
     error_code = False if check_list_of_ints(data[f'include_opening_ids_{i}']) else 400
+    # Limit all inputs here to a single civ and opening id because it doesnt make sense otherwise
+    if len(data[f'include_civ_ids_{i}']) > 1:
+      error_code = 400
+    if len(data[f'include_opening_ids_{i}']) > 1:
+      error_code = 400
 
   #Now validate data
   if not isinstance(data['min_elo'], int):
@@ -215,7 +232,8 @@ def count_response_to_dict(sql_response) :
     # keys are of format civ_victoryType, so split into nested dict because nicer
     # deal with total later
     if key != 'total':
-      components = key.split("_")
+      components = key.split("____")[0] #Remove anything after quad underscore, its just extra stuff for uniqueness
+      components = components.split("_")
       name = " ".join(components[:-1])
       type = components[-1]
       if not name in data:
@@ -284,7 +302,7 @@ def ProcessNextElementInAdvancedQueue():
   adv_query = AdvancedQueryQueue.objects.filter(stale=False, result__isnull=True).order_by('id').values('id', 'query').first()
   if adv_query is None:
     #Nothing to process, queue is empty
-    return
+    return False
   # process element in queue
   data = query_string_to_data_dict(adv_query['query'])
   aggregate_string = "Matches.objects"
@@ -301,6 +319,7 @@ def ProcessNextElementInAdvancedQueue():
   print(matches)
   end = time.time()
   print(end - start)
+  return True
 
 def generate_q_parameters_for_player(player_id, opening_ids, civ_ids):
   #remove any invalid sets
@@ -367,17 +386,45 @@ def generate_q_parameters_for_player(player_id, opening_ids, civ_ids):
   return ret_string
 
 
+def civ_and_opening_ids_to_string(civ_ids, opening_ids) :
+  ret_string = ""
+  if len(civ_ids):
+    if len(opening_ids):
+      return f'{CIV_IDS_TO_NAMES[civ_ids[0]]}_{OPENINGS[opening_ids[0]][0]}'
+    else:
+      return f'{CIV_IDS_TO_NAMES[civ_ids[0]]}'
+  elif len(opening_ids):
+    return f'{OPENINGS[opening_ids[0]][0]}'
+  return ""
+
+
 
 def generate_aggregate_statements_for_advanced_queue(data):
   aggregate_string = f'.aggregate('
+  print(data)
   for i in range(0, ADVANCED_QUERY_COUNT*2, 2):
+    #Skip row if it doesnt have all data and give blank array so we dont hit a value not exists error
+    if f'include_opening_ids_{i}' not in data and f'include_civ_ids_{i}' not in data and f'include_opening_ids_{i+1}' not in data and f'include_civ_ids_{i+1}' not in data:
+      continue
+    if f'include_opening_ids_{i}' not in data:
+      data[f'include_opening_ids_{i}'] = []
+    if f'include_civ_ids_{i}' not in data:
+      data[f'include_civ_ids_{i}'] = []
+    if f'include_opening_ids_{i+1}' not in data:
+      data[f'include_opening_ids_{i+1}'] = []
+    if f'include_civ_ids_{i+1}' not in data:
+      data[f'include_civ_ids_{i+1}'] = []
     p1_strings = generate_q_parameters_for_player(1, data[f'include_opening_ids_{i}'], data[f'include_civ_ids_{i}'])
     p2_strings = generate_q_parameters_for_player(2, data[f'include_opening_ids_{i+1}'], data[f'include_civ_ids_{i+1}'])
     if not len(p1_strings) + len(p2_strings):
       #if neither has any selections, skip
       continue
+    matchup_name = civ_and_opening_ids_to_string(data[f'include_civ_ids_{i}'], data[f'include_opening_ids_{i}'])
+    matchup_name += '__vs__'
+    matchup_name += civ_and_opening_ids_to_string(data[f'include_civ_ids_{i+1}'], data[f'include_opening_ids_{i+1}'])
+    suffix = f'___{i}'
     #total matches
-    aggregate_string += f'player{i}_total=Count(Case(When('
+    aggregate_string += f'{matchup_name}_total_{suffix}=Count(Case(When('
     if p1_strings:
       aggregate_string += p1_strings
     if p1_strings and p2_strings:
@@ -388,7 +435,7 @@ def generate_aggregate_statements_for_advanced_queue(data):
     aggregate_string += ',then=1))),'
 
     #p1 wins
-    aggregate_string += f'player{i}_wins=Count(Case(When('
+    aggregate_string += f'{matchup_name}_wins_{suffix}=Count(Case(When('
     if p1_strings:
       aggregate_string += p1_strings
     if p1_strings and p2_strings:
@@ -400,7 +447,7 @@ def generate_aggregate_statements_for_advanced_queue(data):
     aggregate_string += ',then=1))),'
 
     #p1 losses
-    aggregate_string += f'player{i}_losses=Count(Case(When('
+    aggregate_string += f'{matchup_name}_losses_{suffix}=Count(Case(When('
     if p1_strings:
       aggregate_string += p1_strings
     if p1_strings and p2_strings:
@@ -427,7 +474,7 @@ def generate_aggregate_statements_from_basic_openings(data):
   for opening_id in strategies:
       opening_name = OPENINGS[opening_id][0]
       aggregate_string+=f'{opening_name}_total=Sum(Case('
-      #need to count each player twice in the case of mirrors
+      #need to count each player twice In the case of mirrors
       aggregate_string+=f'When(Q(opening1_id={opening_id}) & Q(opening2_id={opening_id}), then=F("opening1_victory_count") + F("opening1_loss_count") + F("opening2_victory_count") + F("opening2_loss_count")),'
       aggregate_string+=f'When(Q(opening1_id={opening_id}) & (Q(opening2_id__lt={len(Basic_Strategies)}) | Q(opening2_id__gte={len(OPENINGS)-2})), then=F("opening1_victory_count") + F("opening1_loss_count")),'
       aggregate_string+=f'When(Q(opening2_id={opening_id}) & (Q(opening1_id__lt={len(Basic_Strategies)}) | Q(opening1_id__gte={len(OPENINGS)-2})), then=F("opening2_victory_count") + F("opening2_loss_count")))),'
@@ -482,7 +529,7 @@ def generate_aggregate_statements_from_opening_matchups(data):
 def generate_filter_statements_from_parameters(data, table_prefix = "", include_opening_ids = True, elo_string = "elo"):
     filter_string = ".filter("
 
-    if len(data['include_ladder_ids']) and data['include_ladder_ids'][0] != -1:
+    if 'include_ladder_ids' in data and len(data['include_ladder_ids']) and data['include_ladder_ids'][0] != -1:
         count = 0
         for ladder_id in data['include_ladder_ids']:
             if count >0 and count < len(data['include_ladder_ids']):
@@ -491,7 +538,7 @@ def generate_filter_statements_from_parameters(data, table_prefix = "", include_
             count += 1
         filter_string += ","
 
-    if len(data['include_patch_ids']) and data['include_patch_ids'][0] != -1:
+    if 'include_patch_ids' in data and len(data['include_patch_ids']) and data['include_patch_ids'][0] != -1:
         count = 0
         for patch_id in data['include_patch_ids']:
             if count >0 and count < len(data['include_patch_ids']):
@@ -500,7 +547,7 @@ def generate_filter_statements_from_parameters(data, table_prefix = "", include_
             count += 1
         filter_string += ","
 
-    if len(data['include_map_ids']) and data['include_map_ids'][0] != -1:
+    if 'include_map_ids' in data and len(data['include_map_ids']) and data['include_map_ids'][0] != -1:
         count = 0
         for map_id in data['include_map_ids']:
             if count >0 and count < len(data['include_map_ids']):

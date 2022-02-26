@@ -208,7 +208,8 @@ class Advanced(views.APIView):
     if result is None:
       return HttpResponseBadRequest()
     query = result.advancedqueryqueue_set.first().query
-    ret_dict = {'result':result.data, 'query':query}
+    result_list = utils.count_response_to_dict(result.data)
+    ret_dict = {'result':result_list, 'query':query}
     content = JSONRenderer().render(ret_dict)
     return HttpResponse(content)
 
@@ -219,7 +220,7 @@ class Advanced(views.APIView):
     result = utils.EnqueueOrCheckAdvancedRequest(data)
     out_dict = {'position':-1,
                 'result':""}
-    if type(result) is str:
+    if type(result) is uuid.UUID:
       out_dict['result'] = result
     else:
       out_dict['position'] = result
