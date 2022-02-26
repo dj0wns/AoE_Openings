@@ -36,7 +36,7 @@ class Advanced extends Component {
     this.onRemove = this.onRemove.bind(this);
   }
   componentDidMount() {
-    fetch('http://127.0.0.1:8000/api/v1/info/')
+    fetch('/api/v1/info/')
     .then(res => res.json())
     .then((data) => {
       data.techs.sort(function(a,b){return a-b});
@@ -47,7 +47,7 @@ class Advanced extends Component {
 
   handleSubmit(event) {
     event.preventDefault();
-    fetch('http://127.0.0.1:8000/api/v1/advanced/', {
+    fetch('/api/v1/advanced/', {
       method: 'POST',
       headers: {
           Accept: 'application/json',
@@ -58,7 +58,7 @@ class Advanced extends Component {
       .then((json) => {
         if (json.result != "") {
           // We have a valid result, update the page and fetch the data
-          fetch('http://127.0.0.1:8000/api/v1/advanced/?id='+json.result, {
+          fetch('/api/v1/advanced/?id='+json.result, {
             method: 'GET',
           }).then((response) => response.json())
             .then((json) => {
