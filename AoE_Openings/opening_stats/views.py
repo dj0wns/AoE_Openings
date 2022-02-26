@@ -198,6 +198,7 @@ class OpeningTechs(generics.ListAPIView):
     return HttpResponse(content)
 
 class Advanced(views.APIView):
+  @never_cache
   def get(self, request):
     request_id = request.GET.get('id',"")
     try:
@@ -213,6 +214,7 @@ class Advanced(views.APIView):
     content = JSONRenderer().render(ret_dict)
     return HttpResponse(content)
 
+  @never_cache
   def post(self, request, format=None):
     data, error = utils.parse_advanced_post_parameters(request, True)
     if error:
