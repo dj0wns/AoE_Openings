@@ -419,11 +419,11 @@ def generate_aggregate_statements_for_advanced_queue(data):
       data[f'include_civ_ids_{i+1}'] = []
     #enforce that all lists are length 1! - cant just use the validator, need to enforce
     if len(data[f'include_opening_ids_{i}']) > 1:
-      data[f'include_opening_ids_{i}'] = [data[f'include_civ_ids_{i}'][0]]
+      data[f'include_opening_ids_{i}'] = [data[f'include_opening_ids_{i}'][0]]
     if len(data[f'include_civ_ids_{i}']) > 1:
       data[f'include_civ_ids_{i}'] = [data[f'include_civ_ids_{i}'][0]]
     if len(data[f'include_opening_ids_{i+1}']) > 1:
-      data[f'include_opening_ids_{i+1}'] = [data[f'include_civ_ids_{i+1}'][0]]
+      data[f'include_opening_ids_{i+1}'] = [data[f'include_opening_ids_{i+1}'][0]]
     if len(data[f'include_civ_ids_{i+1}']) > 1:
       data[f'include_civ_ids_{i+1}'] = [data[f'include_civ_ids_{i+1}'][0]]
     left_strings_p1 = generate_q_parameters_for_player(1, data[f'include_opening_ids_{i}'], data[f'include_civ_ids_{i}'])
