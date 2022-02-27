@@ -211,6 +211,9 @@ def parse_advanced_post_parameters(request, default_exclude_mirrors) :
       error_code = 400
     if len(data[f'include_opening_ids_{i}']) > 1:
       error_code = 400
+    #break out early if error code observed
+    if error_code:
+      break
 
   #Now validate data
   if not isinstance(data['min_elo'], int):
@@ -414,6 +417,15 @@ def generate_aggregate_statements_for_advanced_queue(data):
       data[f'include_opening_ids_{i+1}'] = []
     if f'include_civ_ids_{i+1}' not in data:
       data[f'include_civ_ids_{i+1}'] = []
+    #enforce that all lists are length 1! - cant just use the validator, need to enforce
+    if len(data[f'include_opening_ids_{i}']) > 1:
+      data[f'include_opening_ids_{i}'] = data[f'include_civ_ids_{i}'][0]
+    if len(data[f'include_civ_ids_{i}']) > 1:
+      data[f'include_civ_ids_{i}'] = data[f'include_civ_ids_{i}'][0]
+    if len(data[f'include_opening_ids_{i+1}']) > 1:
+      data[f'include_opening_ids_{i+1}'] = data[f'include_civ_ids_{i+1}'][0]
+    if len(data[f'include_civ_ids_{i+1}']) > 1:
+      data[f'include_civ_ids_{i+1}'] = data[f'include_civ_ids_{i+1}'][0]
     left_strings_p1 = generate_q_parameters_for_player(1, data[f'include_opening_ids_{i}'], data[f'include_civ_ids_{i}'])
     left_strings_p2 = generate_q_parameters_for_player(2, data[f'include_opening_ids_{i}'], data[f'include_civ_ids_{i}'])
     right_strings_p1 = generate_q_parameters_for_player(1, data[f'include_opening_ids_{i+1}'], data[f'include_civ_ids_{i+1}'])
