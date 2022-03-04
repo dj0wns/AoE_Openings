@@ -15,7 +15,6 @@ const Menu = () => {
             <Nav.Link href={"/opening_stats" + query}>Opening Stats</Nav.Link>
             <Nav.Link href={"/opening_matchups" + query}>Opening Matchups</Nav.Link>
             <Nav.Link href={"/opening_techs" + query}>Opening Tech Timings</Nav.Link>
-            //<Nav.Link href={"/advanced"}>Advanced</Nav.Link>
           </Nav>
           <Nav className='ml-auto'>
             <Nav.Link href={"/about"}>About</Nav.Link>
@@ -25,5 +24,6 @@ const Menu = () => {
     </div>
   );
 }
+//<Nav.Link href={"/advanced"}>Advanced</Nav.Link>
 
 export default Menu;

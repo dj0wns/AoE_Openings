@@ -10,6 +10,12 @@ class Advanced extends Component {
     this.state = {
         info: {civs:[], ladders:[], maps:[], patches:[], openings:[], techs:[]},
         position: -2,
+        // Position:
+        // -2 means nothing
+        // -1 means data or response received from server
+        // 0 means data is currently being processed
+        // 1 means there is one person in front of you in line
+        // etc.
         result:'',
         data: {},
         row_count: 3,
@@ -32,6 +38,7 @@ class Advanced extends Component {
     this.handleChange = this.handleChange.bind(this);
     this.handleRowChange = this.handleRowChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
+    this.query_params = this.props.location.search;
     this.onSelect = this.onSelect.bind(this);
     this.onRemove = this.onRemove.bind(this);
   }
@@ -43,10 +50,25 @@ class Advanced extends Component {
       this.setState({ info: data });
     })
     .catch(console.log)
+    console.log(this.query_params)
+    if (this.query_params) {
+      fetch('/api/v1/advanced/' + this.query_params, {
+            method: 'GET',
+      }).then((response) => response.json())
+        .then((data) => {
+        // Invalid string if no result
+        if (data.result) {
+          this.setState({data:data.result})
+          this.setState({ position: -1});
+        }
+      })
+    }
   }
 
   handleSubmit(event) {
     event.preventDefault();
+    //Update page name
+    this.props.history.push(`${window.location.pathname}`)
     fetch('/api/v1/advanced/', {
       method: 'POST',
       headers: {
@@ -61,10 +83,12 @@ class Advanced extends Component {
           fetch('/api/v1/advanced/?id='+json.result, {
             method: 'GET',
           }).then((response) => response.json())
-            .then((json) => {
-            this.setState({data:json.result})
+            .then((data) => {
+            //Update page name
+            this.props.history.push(`${window.location.pathname}` + "?id=" + json.result)
+
+            this.setState({data:data.result})
             this.setState({ position: -1});
-            console.log(json.result)
           })
         } else {
           // We are waiting in queue for a response
@@ -90,8 +114,15 @@ class Advanced extends Component {
     const target = e.target;
     const name = target.name;
     const value = target.value;
+    var new_post_params = this.state.post_params
+    // Clear post params so data isnt double saved
+    for (var i=target.value; i < 100; ++i) {
+      new_post_params["include_civ_ids_" + i] = []
+      new_post_params["include_opening_ids_" + i] = []
+    }
     this.setState({
       row_count: parseInt(value),
+      post_params: new_post_params
     });
   }
   handleChange(e) {
@@ -240,18 +271,23 @@ class Advanced extends Component {
           </div>
           )}
         <div class="form-row justify-content-center align-self-center">
-          <button class="btn btn-primary" type="submit" disabled={this.state.position > 0}>Submit</button>
+          <button class="btn btn-primary" type="submit" disabled={this.state.position > -1}>Submit</button>
         </div>
       </form>
       <div>
-      { this.state.position == -1 && this.state.data != {}
-        ?
+      { this.state.position == -1 && this.state.data != {} &&
           <div class="queue">
             <DataTable id="civTable" striped responsive data={this.state.data} columns={columns} cellspacing="0" width="80%" defaultSortFieldId={1}/>
           </div>
-        :
+      }
+      { this.state.position == 0 &&
           <div class="queue">
-            <h3> You are {this.state.position} in queue </h3>
+            <h3> Your request is being processed! </h3>
+          </div>
+      }
+      { this.state.position > 0 &&
+          <div class="queue">
+            <h3> You request is {this.state.position+1} in the queue! </h3>
           </div>
       }
       </div>
