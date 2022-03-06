@@ -2,7 +2,7 @@ import React, {Component} from 'react';
 import 'react-tabs/style/react-tabs.css';
 import DataTable from 'react-data-table-component';
 import {Tabs, Tab} from 'react-bootstrap';
-import {cartesian} from "./utils";
+import {cartesian, stringifyNumber} from "./utils";
 import {GeneralInput, SubmitButton, AdvancedFreeEntry, AdvancedCombinationEntry, ADVANCED_QUERY_COUNT} from './form_components';
 
 const StatusText = ({data_class, columns}) => (
@@ -24,7 +24,7 @@ const StatusText = ({data_class, columns}) => (
     }
     { data_class.state.position > 0 &&
         <div class="queue">
-          <h3> You request is {data_class.state.position+1} in the queue! Each item in the queue may take up to a few minutes to process.</h3>
+          <h3> You request is {stringifyNumber(data_class.state.position+1)} in the queue! Each item in the queue may take up to a few minutes to process.</h3>
         </div>
     }
   </div>

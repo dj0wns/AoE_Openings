@@ -1,4 +1,5 @@
 import Multiselect from 'multiselect-react-dropdown';
+import {stringifyNumber, capitalize} from "./utils";
 
 export const ADVANCED_QUERY_COUNT = 50;
 
@@ -38,6 +39,8 @@ export const GeneralInput = ({data_class}) => (
                      selectedValues={data_class.state.include_ladder_ids}
                      onSelect={data_class.onSelect.bind(data_class, data_class.state.include_ladder_ids)}
                      onRemove={data_class.onRemove.bind(data_class, data_class.state.include_ladder_ids)}
+                     placeholder="All ladders"
+                     hidePlaceholder={true}
                      displayValue='name'/>
       </div>
       <div class="form-check col-md-4" >
@@ -47,6 +50,8 @@ export const GeneralInput = ({data_class}) => (
                      selectedValues={data_class.state.include_patch_ids}
                      onSelect={data_class.onSelect.bind(data_class, data_class.state.include_patch_ids)}
                      onRemove={data_class.onRemove.bind(data_class, data_class.state.include_patch_ids)}
+                     placeholder="All patches"
+                     hidePlaceholder={true}
                      displayValue='name'/>
       </div>
       <div class="form-check col-md-4">
@@ -56,6 +61,8 @@ export const GeneralInput = ({data_class}) => (
                      selectedValues={data_class.state.include_map_ids}
                      onSelect={data_class.onSelect.bind(data_class, data_class.state.include_map_ids)}
                      onRemove={data_class.onRemove.bind(data_class, data_class.state.include_map_ids)}
+                     placeholder="All maps"
+                     hidePlaceholder={true}
                      displayValue='name'/>
       </div>
       <div class="form-group col-md-2 mx-auto">
@@ -85,42 +92,50 @@ export const AdvancedFreeEntry = ({data_class}) => (
     {[...Array(data_class.state.row_count)].map((x,i) =>
       <div class="form-row justify-content-center">
          <div class="form-check col-md-2">
-            <label for={"include_civ_ids_"+i*2}>Row {i} Civ</label>
+            <label for={"include_civ_ids_"+i*2}>{capitalize(stringifyNumber(i+1))} Civ</label>
             <Multiselect name={"include_civ_ids_"+i*2}
                          options={data_class.state.info.civs}
                          selectionLimit='1'
                          onSelect={data_class.onSelect.bind(data_class, data_class.state["include_civ_ids_"+i*2])}
                          onRemove={data_class.onRemove.bind(data_class, data_class.state["include_civ_ids_"+i*2])}
+                         placeholder="All civilizations"
+                         hidePlaceholder={true}
                          displayValue='name'/>
          </div>
          <div class="form-check col-md-2">
-            <label for={"include_opening_ids_"+i*2}>Row {i} Opening</label>
+            <label for={"include_opening_ids_"+i*2}>{capitalize(stringifyNumber(i+1))} Opening</label>
             <Multiselect name={"include_opening_ids_"+i*2}
                          options={data_class.state.info.openings}
                          selectionLimit='1'
                          onSelect={data_class.onSelect.bind(data_class, data_class.state["include_opening_ids_"+i*2])}
                          onRemove={data_class.onRemove.bind(data_class, data_class.state["include_opening_ids_"+i*2])}
+                         placeholder="All openings"
+                         hidePlaceholder={true}
                          displayValue='name'/>
          </div>
          <div class="col-md-2 align-self-center text-center">
              <h5>vs</h5>
          </div>
          <div class="form-check col-md-2">
-            <label for={"include_civ_ids_"+(i*2+1)}>Row {i} Enemy Civ</label>
+            <label for={"include_civ_ids_"+(i*2+1)}>{capitalize(stringifyNumber(i+1))} Enemy Civ</label>
             <Multiselect name={"include_civ_ids_"+(i*2+1)}
                          options={data_class.state.info.civs}
                          selectionLimit='1'
                          onSelect={data_class.onSelect.bind(data_class, data_class.state["include_civ_ids_"+(i*2+1)])}
                          onRemove={data_class.onRemove.bind(data_class, data_class.state["include_civ_ids_"+(i*2+1)])}
+                         placeholder="All civilizations"
+                         hidePlaceholder={true}
                          displayValue='name'/>
          </div>
          <div class="form-check col-md-2">
-            <label for={"include_opening_ids_"+(i*2+1)}>Row {i} Enemy Opening</label>
+            <label for={"include_opening_ids_"+(i*2+1)}>{capitalize(stringifyNumber(i+1))} Enemy Opening</label>
             <Multiselect name={"include_opening_ids_"+(i*2+1)}
                          options={data_class.state.info.openings}
                          selectionLimit='1'
                          onSelect={data_class.onSelect.bind(data_class, data_class.state["include_opening_ids_"+(i*2+1)])}
                          onRemove={data_class.onRemove.bind(data_class, data_class.state["include_opening_ids_"+(i*2+1)])}
+                         placeholder="All openings"
+                         hidePlaceholder={true}
                          displayValue='name'/>
          </div>
 
@@ -132,38 +147,46 @@ export const AdvancedFreeEntry = ({data_class}) => (
 export const AdvancedCombinationEntry = ({data_class}) => (
   <div class="form-row justify-content-center">
     <div class="form-check col-md-2">
-       <label for={"include_left_civ_combinations"}>Left Civs</label>
+       <label for={"include_left_civ_combinations"}>Left Civilizations</label>
        <Multiselect name={"include_left_civ_combinations"}
                     options={data_class.state.info.civs}
                     onSelect={data_class.onSelect.bind(data_class, data_class.state["include_left_civ_combinations"])}
                     onRemove={data_class.onRemove.bind(data_class, data_class.state["include_left_civ_combinations"])}
+                    placeholder="All civilizations"
+                    hidePlaceholder={true}
                     displayValue='name'/>
     </div>
     <div class="form-check col-md-2">
-       <label for={"include_left_opening_combinations"}>Left Opening</label>
+       <label for={"include_left_opening_combinations"}>Left Openings</label>
        <Multiselect name={"include_left_opening_combinations"}
                     options={data_class.state.info.openings}
                     onSelect={data_class.onSelect.bind(data_class, data_class.state["include_left_opening_combinations"])}
                     onRemove={data_class.onRemove.bind(data_class, data_class.state["include_left_opening_combinations"])}
+                    placeholder="All openings"
+                    hidePlaceholder={true}
                     displayValue='name'/>
     </div>
     <div class="col-md-2 align-self-center text-center">
         <h5>vs</h5>
     </div>
     <div class="form-check col-md-2">
-       <label for={"include_right_civ_combinations"}>Right Civs</label>
+       <label for={"include_right_civ_combinations"}>Right Civilizations</label>
        <Multiselect name={"include_right_civ_combinations"}
                     options={data_class.state.info.civs}
                     onSelect={data_class.onSelect.bind(data_class, data_class.state["include_right_civ_combinations"])}
                     onRemove={data_class.onRemove.bind(data_class, data_class.state["include_right_civ_combinations"])}
+                    placeholder="All civilizations"
+                    hidePlaceholder={true}
                     displayValue='name'/>
     </div>
     <div class="form-check col-md-2">
-       <label for={"include_right_opening_combinations"}>Right Opening</label>
+       <label for={"include_right_opening_combinations"}>Right Openings</label>
        <Multiselect name={"include_right_opening_combinations"}
                     options={data_class.state.info.openings}
                     onSelect={data_class.onSelect.bind(data_class, data_class.state["include_right_opening_combinations"])}
                     onRemove={data_class.onRemove.bind(data_class, data_class.state["include_right_opening_combinations"])}
+                    placeholder="All openings"
+                    hidePlaceholder={true}
                     displayValue='name'/>
     </div>
   </div>
