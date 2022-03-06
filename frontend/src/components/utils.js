@@ -11,3 +11,10 @@ export function format_game_time(millis) {
 export function default_query() {
   return '?include_ladder_ids=3&include_map_ids=9&'
 }
+
+// Generate all combinations of array elements:
+//https://stackoverflow.com/questions/15298912/javascript-generating-combinations-from-n-arrays-with-m-elements
+export function* cartesian(head, ...tail) {
+  const remainder = tail.length > 0 ? cartesian(...tail) : [[]];
+  for (let r of remainder) for (let h of head) yield [h, ...r];
+}

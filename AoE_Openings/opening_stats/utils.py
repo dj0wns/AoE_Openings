@@ -207,9 +207,9 @@ def parse_advanced_post_parameters(request, default_exclude_mirrors) :
     data[f'include_opening_ids_{i}'] = request.data.get(f'include_opening_ids_{i}', [-1])
     error_code = False if check_list_of_ints(data[f'include_opening_ids_{i}']) else 400
     # Limit all inputs here to a single civ and opening id because it doesnt make sense otherwise
-    if len(data[f'include_civ_ids_{i}']) > 1:
+    if not error_code and len(data[f'include_civ_ids_{i}']) > 1:
       error_code = 400
-    if len(data[f'include_opening_ids_{i}']) > 1:
+    if not error_code and len(data[f'include_opening_ids_{i}']) > 1:
       error_code = 400
     #break out early if error code observed
     if error_code:
