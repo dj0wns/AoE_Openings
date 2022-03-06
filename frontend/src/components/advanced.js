@@ -1,12 +1,50 @@
 import React, {Component} from 'react';
-import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import 'react-tabs/style/react-tabs.css';
-import Input from './input';
 import DataTable from 'react-data-table-component';
-import Multiselect from 'multiselect-react-dropdown';
+import {Tabs, Tab} from 'react-bootstrap';
 import {cartesian} from "./utils";
+import {GeneralInput, SubmitButton, AdvancedFreeEntry, AdvancedCombinationEntry, ADVANCED_QUERY_COUNT} from './form_components';
 
-const ADVANCED_QUERY_COUNT = 50;
+const StatusText = ({data_class, columns}) => (
+  <div>
+    { data_class.state.position == -3 &&
+        <div class="queue">
+          <h3> Your request requires too many rows to be processed. The maximum amount is 50. </h3>
+        </div>
+    }
+    { data_class.state.position == -1 && data_class.state.data != {} &&
+        <div class="queue">
+          <DataTable id="civTable" striped responsive data={data_class.state.data} columns={columns} cellspacing="0" width="80%" defaultSortFieldId={1}/>
+        </div>
+    }
+    { data_class.state.position == 0 &&
+        <div class="queue">
+          <h3> Your request is being processed! May take up to a few minutes to process.</h3>
+        </div>
+    }
+    { data_class.state.position > 0 &&
+        <div class="queue">
+          <h3> You request is {data_class.state.position+1} in the queue! Each item in the queue may take up to a few minutes to process.</h3>
+        </div>
+    }
+  </div>
+);
+
+const FreeEntryForm = ({data_class}) => (
+  <form onSubmit={data_class.handleSubmit}>
+    <GeneralInput data_class={data_class}/>
+    <AdvancedFreeEntry data_class={data_class}/>
+    <SubmitButton data_class={data_class}/>
+  </form>
+);
+
+const ComboEntryForm = ({data_class}) => (
+  <form onSubmit={data_class.handleSubmit}>
+    <GeneralInput data_class={data_class}/>
+    <AdvancedCombinationEntry data_class={data_class}/>
+    <SubmitButton data_class={data_class}/>
+  </form>
+);
 
 class Advanced extends Component {
   constructor(props) {
@@ -28,24 +66,23 @@ class Advanced extends Component {
         // tab_index: index for input type tabs:
         // 0 Free Entry
         // 1 Combinatorics
-        post_params: {
-            min_elo:0,
-            max_elo:3000,
-            include_patch_ids:[],
-            include_ladder_ids:[],
-            include_map_ids:[],
-            include_left_civ_combinations:[],
-            include_left_opening_combinations:[],
-            include_right_civ_combinations:[],
-            include_right_opening_combinations:[],
-            }
+        // POST_PARAMS
+        min_elo:0,
+        max_elo:3000,
+        include_patch_ids:[],
+        include_ladder_ids:[],
+        include_map_ids:[],
+        include_left_civ_combinations:[],
+        include_left_opening_combinations:[],
+        include_right_civ_combinations:[],
+        include_right_opening_combinations:[],
         };
 
     // Add dynamic rows to post params
     // we allow up to 50 rows, so do 100 of these
     for (var i=0; i < ADVANCED_QUERY_COUNT*2; ++i) {
-      this.state.post_params["include_civ_ids_" + i] = []
-      this.state.post_params["include_opening_ids_" + i] = []
+      this.state["include_civ_ids_" + i] = []
+      this.state["include_opening_ids_" + i] = []
     }
 
     this.handleChange = this.handleChange.bind(this);
@@ -55,7 +92,27 @@ class Advanced extends Component {
     this.query_params = this.props.location.search;
     this.onSelect = this.onSelect.bind(this);
     this.onRemove = this.onRemove.bind(this);
+    this.getPostParams = this.getPostParams.bind(this);
   }
+
+  getPostParams() {
+    var post_params = {}
+    post_params.min_elo = this.state.min_elo;
+    post_params.max_elo = this.state.max_elo;
+    post_params.include_patch_ids = this.state.include_patch_ids;
+    post_params.include_ladder_ids = this.state.include_ladder_ids;
+    post_params.include_map_ids = this.state.include_map_ids;
+    post_params.include_left_civ_combinations = this.state.include_left_civ_combinations;
+    post_params.include_left_opening_combinations = this.state.include_left_opening_combinations;
+    post_params.include_right_civ_combinations = this.state.include_right_civ_combinations;
+    post_params.include_right_opening_combinations = this.state.include_right_opening_combinations;
+    for (var i=0; i < ADVANCED_QUERY_COUNT*2; ++i) {
+      post_params["include_civ_ids_" + i] = this.state["include_civ_ids_" + i]
+      post_params["include_opening_ids_" + i] = this.state["include_opening_ids_" + i]
+    }
+    return post_params
+  }
+
   componentDidMount() {
     fetch('/api/v1/info/')
     .then(res => res.json())
@@ -80,20 +137,8 @@ class Advanced extends Component {
 
   handleSubmit(event) {
     event.preventDefault();
-    var post_params = {};
-    if (this.state.tab_index == 0) {
-      post_params = this.state.post_params;
-    } else if (this.state.tab_index == 1) {
-      // generate post params from combinations
-      post_params.min_elo = this.state.post_params.min_elo;
-      post_params.max_elo = this.state.post_params.max_elo;
-      post_params.include_patch_ids = this.state.post_params.include_patch_ids;
-      post_params.include_ladder_ids = this.state.post_params.include_ladder_ids;
-      post_params.include_map_ids = this.state.post_params.include_map_ids;
-      post_params.include_left_civ_combinations = this.state.post_params.include_left_civ_combinations;
-      post_params.include_left_opening_combinations = this.state.post_params.include_left_opening_combinations;
-      post_params.include_right_civ_combinations = this.state.post_params.include_right_civ_combinations;
-      post_params.include_right_opening_combinations = this.state.post_params.include_right_opening_combinations;
+    var post_params = this.getPostParams();
+    if (this.state.tab_index == 1) {
       // add a -1 to empty lists
       if (!post_params.include_left_civ_combinations.length) {
         post_params.include_left_civ_combinations = [-1]
@@ -192,28 +237,28 @@ class Advanced extends Component {
     const target = e.target;
     const name = target.name;
     const value = target.value;
-    var new_post_params = this.state.post_params
+    this.setState({row_count:parseInt(target.value)})
     // Clear post params so data isnt double saved
     for (var i=target.value; i < ADVANCED_QUERY_COUNT*2; ++i) {
-      new_post_params["include_civ_ids_" + i] = []
-      new_post_params["include_opening_ids_" + i] = []
+      this.setState({["include_civ_ids_" + i]:[]})
+      this.setState({["include_opening_ids_" + i]:[]})
     }
-    this.setState({
-      row_count: parseInt(value),
-      post_params: new_post_params
-    });
   }
   handleChange(e) {
     const target = e.target;
     const name = target.name;
     const value = target.value;
-    var new_post_params = this.state.post_params
-    new_post_params[name] = parseInt(value)
     this.setState({
-      post_params: new_post_params
+      [name]: parseInt(value)
     });
   }
-  handleTabs(index) {
+  handleTabs(key) {
+    var index = 0;
+    if (key == "free_entry") {
+      index = 0;
+    } else if (key == "combinations") {
+     index = 1;
+    }
     this.setState({
       tab_index: index
     });
@@ -241,195 +286,20 @@ class Advanced extends Component {
     ]
     return (
       <div>
-      <form onSubmit={this.handleSubmit}>
-        <div class="form-row">
-          <div class="form-group col-md-6 mx-auto">
-            <label for="min_elo">Min Elo</label>
-            <input type="number"
-                   class="form-control"
-                   id="min_elo"
-                   name="min_elo"
-                   step="50"
-                   min="0"
-                   max="3000"
-                   value={this.state.post_params.min_elo}
-                   onChange={this.handleChange}/>
-          </div>
-          <div class="form-group col-md-6 mx-auto">
-            <label for="max_elo">Max Elo</label>
-            <input type="number"
-                   class="form-control"
-                   id="max_elo"
-                   name="max_elo"
-                   step="50"
-                   min="0"
-                   max="3000"
-                   value={this.state.post_params.max_elo}
-                   onChange={this.handleChange}/>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-check col-md-2" >
-            <label for="include_ladder_ids">Ladders</label>
-            <Multiselect name="include_ladder_ids"
-                         options={this.state.info.ladders}
-                         selectedValues={this.state.post_params.include_ladder_ids}
-                         onSelect={this.onSelect.bind(this, this.state.post_params.include_ladder_ids)}
-                         onRemove={this.onRemove.bind(this, this.state.post_params.include_ladder_ids)}
-                         displayValue='name'/>
-          </div>
-          <div class="form-check col-md-4" >
-            <label for="include_patch_ids">Patches</label>
-            <Multiselect name="include_patch_ids"
-                         options={this.state.info.patches}
-                         selectedValues={this.state.post_params.include_patch_ids}
-                         onSelect={this.onSelect.bind(this, this.state.post_params.include_patch_ids)}
-                         onRemove={this.onRemove.bind(this, this.state.post_params.include_patch_ids)}
-                         displayValue='name'/>
-          </div>
-          <div class="form-check col-md-4">
-            <label for="include_map_ids">Maps</label>
-            <Multiselect name="include_map_ids"
-                         options={this.state.info.maps}
-                         selectedValues={this.state.post_params.include_map_ids}
-                         onSelect={this.onSelect.bind(this, this.state.post_params.include_map_ids)}
-                         onRemove={this.onRemove.bind(this, this.state.post_params.include_map_ids)}
-                         displayValue='name'/>
-          </div>
-          <div class="form-group col-md-2 mx-auto">
-            <label for="num_rows">Row Count</label>
-            <input type="number"
-                   class="form-control"
-                   id="num_rows"
-                   name="num_rows"
-                   step="1"
-                   min="0"
-                   max={ADVANCED_QUERY_COUNT}
-                   value={this.state.row_count}
-                   onChange={this.handleRowChange}/>
-          </div>
-        </div>
-        <Tabs onSelect={this.handleTabs}>
-          <TabList>
-            <Tab>Free Entry</Tab>
-            <Tab>Combinations</Tab>
-          </TabList>
-          <TabPanel>
-            {[...Array(this.state.row_count)].map((x,i) =>
-            <div class="form-row justify-content-center">
-               <div class="form-check col-md-2">
-                  <label for={"include_civ_ids_"+i*2}>Row {i} Civ</label>
-                  <Multiselect name={"include_civ_ids_"+i*2}
-                               options={this.state.info.civs}
-                               selectionLimit='1'
-                               onSelect={this.onSelect.bind(this, this.state.post_params["include_civ_ids_"+i*2])}
-                               onRemove={this.onRemove.bind(this, this.state.post_params["include_civ_ids_"+i*2])}
-                               displayValue='name'/>
-               </div>
-               <div class="form-check col-md-2">
-                  <label for={"include_opening_ids_"+i*2}>Row {i} Opening</label>
-                  <Multiselect name={"include_opening_ids_"+i*2}
-                               options={this.state.info.openings}
-                               selectionLimit='1'
-                               onSelect={this.onSelect.bind(this, this.state.post_params["include_opening_ids_"+i*2])}
-                               onRemove={this.onRemove.bind(this, this.state.post_params["include_opening_ids_"+i*2])}
-                               displayValue='name'/>
-               </div>
-               <div class="col-md-2 align-self-center text-center">
-                   <h5>vs</h5>
-               </div>
-               <div class="form-check col-md-2">
-                  <label for={"include_civ_ids_"+(i*2+1)}>Row {i} Enemy Civ</label>
-                  <Multiselect name={"include_civ_ids_"+(i*2+1)}
-                               options={this.state.info.civs}
-                               selectionLimit='1'
-                               onSelect={this.onSelect.bind(this, this.state.post_params["include_civ_ids_"+(i*2+1)])}
-                               onRemove={this.onRemove.bind(this, this.state.post_params["include_civ_ids_"+(i*2+1)])}
-                               displayValue='name'/>
-               </div>
-               <div class="form-check col-md-2">
-                  <label for={"include_opening_ids_"+(i*2+1)}>Row {i} Enemy Opening</label>
-                  <Multiselect name={"include_opening_ids_"+(i*2+1)}
-                               options={this.state.info.openings}
-                               selectionLimit='1'
-                               onSelect={this.onSelect.bind(this, this.state.post_params["include_opening_ids_"+(i*2+1)])}
-                               onRemove={this.onRemove.bind(this, this.state.post_params["include_opening_ids_"+(i*2+1)])}
-                               displayValue='name'/>
-               </div>
-
-            </div>
-            )}
-          </TabPanel>
-          <TabPanel>
-            <div class="form-row justify-content-center">
-               <div class="form-check col-md-2">
-                  <label for={"include_left_civ_combinations"}>Left Civs</label>
-                  <Multiselect name={"include_left_civ_combinations"}
-                               options={this.state.info.civs}
-                               onSelect={this.onSelect.bind(this, this.state.post_params["include_left_civ_combinations"])}
-                               onRemove={this.onRemove.bind(this, this.state.post_params["include_left_civ_combinations"])}
-                               displayValue='name'/>
-               </div>
-               <div class="form-check col-md-2">
-                  <label for={"include_left_opening_combinations"}>Left Opening</label>
-                  <Multiselect name={"include_left_opening_combinations"}
-                               options={this.state.info.openings}
-                               onSelect={this.onSelect.bind(this, this.state.post_params["include_left_opening_combinations"])}
-                               onRemove={this.onRemove.bind(this, this.state.post_params["include_left_opening_combinations"])}
-                               displayValue='name'/>
-               </div>
-               <div class="col-md-2 align-self-center text-center">
-                   <h5>vs</h5>
-               </div>
-               <div class="form-check col-md-2">
-                  <label for={"include_right_civ_combinations"}>Right Civs</label>
-                  <Multiselect name={"include_right_civ_combinations"}
-                               options={this.state.info.civs}
-                               onSelect={this.onSelect.bind(this, this.state.post_params["include_right_civ_combinations"])}
-                               onRemove={this.onRemove.bind(this, this.state.post_params["include_right_civ_combinations"])}
-                               displayValue='name'/>
-               </div>
-               <div class="form-check col-md-2">
-                  <label for={"include_right_opening_combinations"}>Right Opening</label>
-                  <Multiselect name={"include_right_opening_combinations"}
-                               options={this.state.info.openings}
-                               onSelect={this.onSelect.bind(this, this.state.post_params["include_right_opening_combinations"])}
-                               onRemove={this.onRemove.bind(this, this.state.post_params["include_right_opening_combinations"])}
-                               displayValue='name'/>
-               </div>
-            </div>
-          </TabPanel>
+        <Tabs defaultActiveKey="free_entry" id="form-tab" className="mb-3" transition={false} onSelect={this.handleTabs}>
+          <Tab eventKey="free_entry" title="Free Entry">
+            <FreeEntryForm data_class={this}/>
+          </Tab>
+          <Tab eventKey="combinations" title="Combinations">
+            <ComboEntryForm data_class={this}/>
+          </Tab>
         </Tabs>
-        <div class="form-row justify-content-center align-self-center">
-          <button class="btn btn-primary" type="submit" disabled={this.state.position > -1}>Submit</button>
-        </div>
-      </form>
       <div>
-      { this.state.position == -3 &&
-          <div class="queue">
-            <h3> Your request requires too many rows to be processed. The maximum amount is 50. </h3>
-          </div>
-      }
-      { this.state.position == -1 && this.state.data != {} &&
-          <div class="queue">
-            <DataTable id="civTable" striped responsive data={this.state.data} columns={columns} cellspacing="0" width="80%" defaultSortFieldId={1}/>
-          </div>
-      }
-      { this.state.position == 0 &&
-          <div class="queue">
-            <h3> Your request is being processed! May take up to a few minutes to process.</h3>
-          </div>
-      }
-      { this.state.position > 0 &&
-          <div class="queue">
-            <h3> You request is {this.state.position+1} in the queue! Each item in the queue may take up to a few minutes to process.</h3>
-          </div>
-      }
+        <StatusText data_class={this} columns={columns}/>
       </div>
     </div>
     );
   }
 
 }
-
 export default Advanced
