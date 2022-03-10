@@ -27,7 +27,6 @@ class Input extends Component {
     this.setInitialSelected = this.setInitialSelected.bind(this);
     this.min_elo_callback = this.min_elo_callback.bind(this);
     this.max_elo_callback = this.max_elo_callback.bind(this);
-    this.formatArgumentsForMultiSelect = this.formatArgumentsForMultiSelect.bind(this);
     this.handle_patches_add = this.handle_patches_add.bind(this);
     this.handle_patches_remove = this.handle_patches_remove.bind(this);
     this.handle_maps_add = this.handle_maps_add.bind(this);
