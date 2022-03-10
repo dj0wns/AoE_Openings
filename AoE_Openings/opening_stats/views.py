@@ -211,7 +211,8 @@ class Advanced(views.APIView):
       return HttpResponseBadRequest()
     query_obj = result.advancedqueryqueue_set.first()
     query = query_obj.query
-    date = query_obj.time_completed.strftime("%d/%m/%Y")
+    if query_obj.time_completed is not None:
+      date = query_obj.time_completed.strftime("%d/%m/%Y")
     result_list = utils.count_response_to_dict(result.data)
     ret_dict = {'result':result_list, 'query':query, 'date':date}
     content = JSONRenderer().render(ret_dict)
