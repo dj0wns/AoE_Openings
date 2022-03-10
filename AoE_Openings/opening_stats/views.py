@@ -6,7 +6,7 @@ from django.views.decorators.cache import never_cache
 from rest_framework import generics, views, status
 from rest_framework.renderers import JSONRenderer
 from rest_framework_api_key.permissions import HasAPIKey
-from opening_stats.models import Openings, Matches, MatchPlayerActions, Maps, Techs, Ladders, Patches, CivEloWins, OpeningEloWins, OpeningEloTechs, Players, AdvancedQueryResults
+from opening_stats.models import Openings, Matches, MatchPlayerActions, Maps, Techs, Ladders, Patches, CivEloWins, OpeningEloWins, OpeningEloTechs, Players, AdvancedQueryResults, AdvancedQueryQueue
 from opening_stats.serializers import OpeningsSerializer, MatchesSerializer, MatchInputSerializer, TestSerializer, MatchPlayerActionsSerializer, PlayersSerializer, PatchesSerializer
 from . import utils
 import os
@@ -209,9 +209,11 @@ class Advanced(views.APIView):
     result = AdvancedQueryResults.objects.get(pk=uuid_key)
     if result is None:
       return HttpResponseBadRequest()
-    query = result.advancedqueryqueue_set.first().query
+    query_obj = result.advancedqueryqueue_set.first()
+    query = query_obj.query
+    date = query_obj.time_completed.strftime("%d/%m/%Y")
     result_list = utils.count_response_to_dict(result.data)
-    ret_dict = {'result':result_list, 'query':query}
+    ret_dict = {'result':result_list, 'query':query, 'date':date}
     content = JSONRenderer().render(ret_dict)
     return HttpResponse(content)
 
@@ -390,4 +392,6 @@ class ImportMatches(views.APIView):
 
     end = time.time()
     print(f"ImportMatches took {end-start} seconds to complete!")
+    # Invalidate advanced queue
+    AdvancedQueryQueue.objects.filter(stale=False).order_by('id').update(stale=True)
     return HttpResponse("You are loved <3", status=status.HTTP_201_CREATED)

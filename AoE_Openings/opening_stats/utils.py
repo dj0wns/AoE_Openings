@@ -8,6 +8,7 @@ import urllib
 from django.db.models import F, Count, Case, When, Q, Sum, Avg, Value, FloatField
 from .AoE_Rec_Opening_Analysis.aoe_replay_stats import OpeningType
 from opening_stats.models import Matches, Techs, MatchPlayerActions, CivEloWins, OpeningEloWins, OpeningEloTechs, Patches, AdvancedQueryQueue, AdvancedQueryResults
+import django.utils.timezone
 
 ELO_DELTA = 50
 
@@ -214,6 +215,15 @@ def parse_advanced_post_parameters(request, default_exclude_mirrors) :
     #break out early if error code observed
     if error_code:
       break
+  #combo params - only used for rebuilding the state
+  data[f'include_left_civ_combinations'] = request.data.get(f'include_left_civ_combinations', [-1])
+  error_code = False if check_list_of_ints(data[f'include_left_civ_combinations']) else 400
+  data[f'include_left_opening_combinations'] = request.data.get(f'include_left_opening_combinations', [-1])
+  error_code = False if check_list_of_ints(data[f'include_left_opening_combinations']) else 400
+  data[f'include_right_civ_combinations'] = request.data.get(f'include_right_civ_combinations', [-1])
+  error_code = False if check_list_of_ints(data[f'include_right_civ_combinations']) else 400
+  data[f'include_right_opening_combinations'] = request.data.get(f'include_right_opening_combinations', [-1])
+  error_code = False if check_list_of_ints(data[f'include_right_opening_combinations']) else 400
 
   #Now validate data
   if not isinstance(data['min_elo'], int):
@@ -317,6 +327,7 @@ def ProcessNextElementInAdvancedQueue():
   result.save()
   #get queue object so we can update with new foreign key
   adv_query =  AdvancedQueryQueue.objects.get(pk=adv_query['id'])
+  adv_query.time_completed = django.utils.timezone.now()
   adv_query.result = result
   adv_query.save()
   print(matches)

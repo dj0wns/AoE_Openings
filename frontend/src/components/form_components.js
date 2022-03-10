@@ -36,7 +36,7 @@ export const GeneralInput = ({data_class}) => (
         <label for="include_ladder_ids">Ladders</label>
         <Multiselect name="include_ladder_ids"
                      options={data_class.state.info.ladders}
-                     selectedValues={data_class.state.include_ladder_ids}
+                     selectedValues={data_class.state.initial_selected.include_ladder_ids}
                      onSelect={data_class.onSelect.bind(data_class, data_class.state.include_ladder_ids)}
                      onRemove={data_class.onRemove.bind(data_class, data_class.state.include_ladder_ids)}
                      placeholder="All ladders"
@@ -47,7 +47,7 @@ export const GeneralInput = ({data_class}) => (
         <label for="include_patch_ids">Patches</label>
         <Multiselect name="include_patch_ids"
                      options={data_class.state.info.patches}
-                     selectedValues={data_class.state.include_patch_ids}
+                     selectedValues={data_class.state.initial_selected.include_patch_ids}
                      onSelect={data_class.onSelect.bind(data_class, data_class.state.include_patch_ids)}
                      onRemove={data_class.onRemove.bind(data_class, data_class.state.include_patch_ids)}
                      placeholder="All patches"
@@ -58,7 +58,7 @@ export const GeneralInput = ({data_class}) => (
         <label for="include_map_ids">Maps</label>
         <Multiselect name="include_map_ids"
                      options={data_class.state.info.maps}
-                     selectedValues={data_class.state.include_map_ids}
+                     selectedValues={data_class.state.initial_selected.include_map_ids}
                      onSelect={data_class.onSelect.bind(data_class, data_class.state.include_map_ids)}
                      onRemove={data_class.onRemove.bind(data_class, data_class.state.include_map_ids)}
                      placeholder="All maps"
@@ -98,6 +98,7 @@ export const AdvancedFreeEntry = ({data_class}) => (
                          selectionLimit='1'
                          onSelect={data_class.onSelect.bind(data_class, data_class.state["include_civ_ids_"+i*2])}
                          onRemove={data_class.onRemove.bind(data_class, data_class.state["include_civ_ids_"+i*2])}
+                         selectedValues={data_class.state.initial_selected["include_civ_ids_"+i*2]}
                          placeholder="All civilizations"
                          hidePlaceholder={true}
                          displayValue='name'/>
@@ -109,6 +110,7 @@ export const AdvancedFreeEntry = ({data_class}) => (
                          selectionLimit='1'
                          onSelect={data_class.onSelect.bind(data_class, data_class.state["include_opening_ids_"+i*2])}
                          onRemove={data_class.onRemove.bind(data_class, data_class.state["include_opening_ids_"+i*2])}
+                         selectedValues={data_class.state.initial_selected["include_opening_ids_"+i*2]}
                          placeholder="All openings"
                          hidePlaceholder={true}
                          displayValue='name'/>
@@ -123,6 +125,7 @@ export const AdvancedFreeEntry = ({data_class}) => (
                          selectionLimit='1'
                          onSelect={data_class.onSelect.bind(data_class, data_class.state["include_civ_ids_"+(i*2+1)])}
                          onRemove={data_class.onRemove.bind(data_class, data_class.state["include_civ_ids_"+(i*2+1)])}
+                         selectedValues={data_class.state.initial_selected["include_civ_ids_"+(i*2+1)]}
                          placeholder="All civilizations"
                          hidePlaceholder={true}
                          displayValue='name'/>
@@ -134,6 +137,7 @@ export const AdvancedFreeEntry = ({data_class}) => (
                          selectionLimit='1'
                          onSelect={data_class.onSelect.bind(data_class, data_class.state["include_opening_ids_"+(i*2+1)])}
                          onRemove={data_class.onRemove.bind(data_class, data_class.state["include_opening_ids_"+(i*2+1)])}
+                         selectedValues={data_class.state.initial_selected["include_opening_ids_"+(i*2+1)]}
                          placeholder="All openings"
                          hidePlaceholder={true}
                          displayValue='name'/>
@@ -153,6 +157,7 @@ export const AdvancedCombinationEntry = ({data_class}) => (
                     onSelect={data_class.onSelect.bind(data_class, data_class.state["include_left_civ_combinations"])}
                     onRemove={data_class.onRemove.bind(data_class, data_class.state["include_left_civ_combinations"])}
                     placeholder="All civilizations"
+                    selectedValues={data_class.state.initial_selected["include_left_civ_combinations"]}
                     hidePlaceholder={true}
                     displayValue='name'/>
     </div>
@@ -162,6 +167,7 @@ export const AdvancedCombinationEntry = ({data_class}) => (
                     options={data_class.state.info.openings}
                     onSelect={data_class.onSelect.bind(data_class, data_class.state["include_left_opening_combinations"])}
                     onRemove={data_class.onRemove.bind(data_class, data_class.state["include_left_opening_combinations"])}
+                    selectedValues={data_class.state.initial_selected["include_left_opening_combinations"]}
                     placeholder="All openings"
                     hidePlaceholder={true}
                     displayValue='name'/>
@@ -175,6 +181,7 @@ export const AdvancedCombinationEntry = ({data_class}) => (
                     options={data_class.state.info.civs}
                     onSelect={data_class.onSelect.bind(data_class, data_class.state["include_right_civ_combinations"])}
                     onRemove={data_class.onRemove.bind(data_class, data_class.state["include_right_civ_combinations"])}
+                    selectedValues={data_class.state.initial_selected["include_right_civ_combinations"]}
                     placeholder="All civilizations"
                     hidePlaceholder={true}
                     displayValue='name'/>
@@ -185,6 +192,7 @@ export const AdvancedCombinationEntry = ({data_class}) => (
                     options={data_class.state.info.openings}
                     onSelect={data_class.onSelect.bind(data_class, data_class.state["include_right_opening_combinations"])}
                     onRemove={data_class.onRemove.bind(data_class, data_class.state["include_right_opening_combinations"])}
+                    selectedValues={data_class.state.initial_selected["include_right_opening_combinations"]}
                     placeholder="All openings"
                     hidePlaceholder={true}
                     displayValue='name'/>

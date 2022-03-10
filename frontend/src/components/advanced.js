@@ -2,7 +2,7 @@ import React, {Component} from 'react';
 import 'react-tabs/style/react-tabs.css';
 import DataTable from 'react-data-table-component';
 import {Tabs, Tab} from 'react-bootstrap';
-import {cartesian, stringifyNumber} from "./utils";
+import {cartesian, stringifyNumber, formatArgumentsForMultiSelect} from "./utils";
 import {GeneralInput, SubmitButton, AdvancedFreeEntry, AdvancedCombinationEntry, ADVANCED_QUERY_COUNT} from './form_components';
 
 const StatusText = ({data_class, columns}) => (
@@ -14,6 +14,7 @@ const StatusText = ({data_class, columns}) => (
     }
     { data_class.state.position == -1 && data_class.state.data != {} &&
         <div class="queue">
+          <h3> This data was processed on {data_class.state.date} </h3>
           <DataTable id="civTable" striped responsive data={data_class.state.data} columns={columns} cellspacing="0" width="80%" defaultSortFieldId={1}/>
         </div>
     }
@@ -51,7 +52,6 @@ class Advanced extends Component {
     super(props);
     this.state = {
         info: {civs:[], ladders:[], maps:[], patches:[], openings:[], techs:[]},
-        position: -2,
         // Position:
         // -3 Error: too many combinations selected - total selected / max selected
         // -2 means nothing
@@ -59,13 +59,19 @@ class Advanced extends Component {
         // 0 means data is currently being processed
         // 1 means there is one person in front of you in line
         // etc.
+        position: -2,
         result:'',
         data: {},
+        date: "",
         row_count: 3,
-        tab_index: 0,
         // tab_index: index for input type tabs:
         // 0 Free Entry
         // 1 Combinatorics
+        tab_index: 0,
+        tab_key: "free_entry",
+        // initial_selected:
+        // Used when loading from a previous query
+        initial_selected:{},
         // POST_PARAMS
         min_elo:0,
         max_elo:3000,
@@ -93,6 +99,7 @@ class Advanced extends Component {
     this.onSelect = this.onSelect.bind(this);
     this.onRemove = this.onRemove.bind(this);
     this.getPostParams = this.getPostParams.bind(this);
+    this.setInitialSelected = this.setInitialSelected.bind(this);
   }
 
   getPostParams() {
@@ -102,15 +109,116 @@ class Advanced extends Component {
     post_params.include_patch_ids = this.state.include_patch_ids;
     post_params.include_ladder_ids = this.state.include_ladder_ids;
     post_params.include_map_ids = this.state.include_map_ids;
-    post_params.include_left_civ_combinations = this.state.include_left_civ_combinations;
-    post_params.include_left_opening_combinations = this.state.include_left_opening_combinations;
-    post_params.include_right_civ_combinations = this.state.include_right_civ_combinations;
-    post_params.include_right_opening_combinations = this.state.include_right_opening_combinations;
-    for (var i=0; i < ADVANCED_QUERY_COUNT*2; ++i) {
-      post_params["include_civ_ids_" + i] = this.state["include_civ_ids_" + i]
-      post_params["include_opening_ids_" + i] = this.state["include_opening_ids_" + i]
+    if (this.state.tab_index == 1) {
+      post_params.include_left_civ_combinations = this.state.include_left_civ_combinations;
+      post_params.include_left_opening_combinations = this.state.include_left_opening_combinations;
+      post_params.include_right_civ_combinations = this.state.include_right_civ_combinations;
+      post_params.include_right_opening_combinations = this.state.include_right_opening_combinations;
+    } else {
+      for (var i=0; i < ADVANCED_QUERY_COUNT*2; ++i) {
+        post_params["include_civ_ids_" + i] = this.state["include_civ_ids_" + i]
+        post_params["include_opening_ids_" + i] = this.state["include_opening_ids_" + i]
+      }
     }
     return post_params
+  }
+
+  setInitialSelected(query) {
+    var initial_selected = {}
+    if (query.get("min_elo")) {
+      this.setState({min_elo:parseInt(query.get("min_elo"))})
+    }
+    if (query.get("max_elo")) {
+      this.setState({max_elo:parseInt(query.get("max_elo"))})
+    }
+    if (query.get("include_patch_ids")) {
+      initial_selected.include_patch_ids =
+          formatArgumentsForMultiSelect(query.get("include_patch_ids").split(",").map(Number),
+                                        this.state.info.patches)
+      this.setState({include_patch_ids:query.get("include_patch_ids").split(",").map(Number)})
+    }
+    if (query.get("include_map_ids")) {
+      initial_selected.include_map_ids =
+          formatArgumentsForMultiSelect(query.get("include_map_ids").split(",").map(Number),
+                                        this.state.info.maps)
+      this.setState({include_map_ids:query.get("include_map_ids").split(",").map(Number)})
+    }
+    if (query.get("include_ladder_ids")) {
+      initial_selected.include_ladder_ids =
+          formatArgumentsForMultiSelect(query.get("include_ladder_ids").split(",").map(Number),
+                                        this.state.info.ladders)
+      this.setState({include_ladder_ids:query.get("include_ladder_ids").split(",").map(Number)})
+    }
+    // Combo View
+    initial_selected.include_left_civ_combinations = []
+    var index = -1 ;
+    if (query.get("include_left_civ_combinations")) {
+      var ids = query.get("include_left_civ_combinations").split(",").map(Number)
+      // Remove -1 if exists
+      if ((index = ids.indexOf(-1)) > -1) ids.splice(index,1)
+      initial_selected.include_left_civ_combinations =
+          formatArgumentsForMultiSelect(ids, this.state.info.civs)
+      this.setState({include_left_civ_combinations:ids})
+    }
+    initial_selected.include_left_opening_combinations = []
+    if (query.get("include_left_opening_combinations")) {
+      var ids = query.get("include_left_opening_combinations").split(",").map(Number)
+      // Remove -1 if exists
+      if ((index = ids.indexOf(-1)) > -1) ids.splice(index,1)
+      initial_selected.include_left_opening_combinations =
+          formatArgumentsForMultiSelect(ids, this.state.info.openings)
+      this.setState({include_left_opening_combinations:ids})
+    }
+    initial_selected.include_right_civ_combinations = []
+    if (query.get("include_right_civ_combinations")) {
+      var ids = query.get("include_right_civ_combinations").split(",").map(Number)
+      // Remove -1 if exists
+      if ((index = ids.indexOf(-1)) > -1) ids.splice(index,1)
+      initial_selected.include_right_civ_combinations =
+          formatArgumentsForMultiSelect(ids, this.state.info.civs)
+      this.setState({include_right_civ_combinations:ids})
+    }
+    initial_selected.include_right_opening_combinations = []
+    if (query.get("include_right_opening_combinations")) {
+      var ids = query.get("include_right_opening_combinations").split(",").map(Number)
+      // Remove -1 if exists
+      if ((index = ids.indexOf(-1)) > -1) ids.splice(index,1)
+      initial_selected.include_right_opening_combinations =
+          formatArgumentsForMultiSelect(ids, this.state.info.openings)
+      this.setState({include_right_opening_combinations:ids})
+    }
+    // If any of these have values then we used the combinatorics view
+    if (initial_selected.include_left_civ_combinations.length ||
+        initial_selected.include_left_opening_combinations.length ||
+        initial_selected.include_right_civ_combinations.length ||
+        initial_selected.include_right_opening_combinations.length) {
+      this.setState({tab_index:1})
+      this.setState({tab_key:"combinations"})
+    }
+    var row_count = 1
+    // Free Entry View
+    for (var i=0; i < ADVANCED_QUERY_COUNT*2; ++i) {
+      var row_found = false
+      if (query.get("include_civ_ids_" + i) && parseInt(query.get("include_civ_ids_" + i)) != -1) {
+        initial_selected["include_civ_ids_" + i] =
+            formatArgumentsForMultiSelect([query.get("include_civ_ids_" + i)],
+                                          this.state.info.civs);
+        this.setState({["include_civ_ids_" + i]:[parseInt(query.get("include_civ_ids_" + i))]})
+        row_found = true;
+      }
+      if (query.get("include_opening_ids_" + i) && parseInt(query.get("include_opening_ids_" + i)) != -1) {
+        initial_selected["include_opening_ids_" + i] =
+            formatArgumentsForMultiSelect([query.get("include_opening_ids_" + i)],
+                                          this.state.info.openings);
+        this.setState({["include_opening_ids_" + i]:[parseInt(query.get("include_opening_ids_" + i))]})
+        row_found = true;
+      }
+      if (row_found) {
+        row_count = Math.floor((i+1)/2)
+      }
+    }
+    this.setState({row_count:row_count})
+    this.setState({initial_selected:initial_selected})
   }
 
   componentDidMount() {
@@ -119,20 +227,23 @@ class Advanced extends Component {
     .then((data) => {
       data.techs.sort(function(a,b){return a-b});
       this.setState({ info: data });
+      // Wait for info query to complete try and set up query params
+      if (this.query_params) {
+        fetch('/api/v1/advanced/' + this.query_params, {
+              method: 'GET',
+        }).then((response) => response.json())
+          .then((data) => {
+          // Invalid string if no result
+          if (data.result) {
+            this.setState({data:data.result})
+            this.setState({date:data.date})
+            this.setState({ position: -1});
+            this.setInitialSelected(new URLSearchParams(data.query))
+          }
+        })
+      }
     })
     .catch(console.log)
-    if (this.query_params) {
-      fetch('/api/v1/advanced/' + this.query_params, {
-            method: 'GET',
-      }).then((response) => response.json())
-        .then((data) => {
-        // Invalid string if no result
-        if (data.result) {
-          this.setState({data:data.result})
-          this.setState({ position: -1});
-        }
-      })
-    }
   }
 
   handleSubmit(event) {
@@ -210,6 +321,7 @@ class Advanced extends Component {
             //Update page name
             this.props.history.push(`${window.location.pathname}` + "?id=" + json.result)
 
+            this.setState({date:data.date})
             this.setState({data:data.result})
             this.setState({ position: -1});
           })
@@ -260,7 +372,8 @@ class Advanced extends Component {
      index = 1;
     }
     this.setState({
-      tab_index: index
+      tab_index: index,
+      tab_key: key
     });
   }
   render() {
@@ -286,7 +399,11 @@ class Advanced extends Component {
     ]
     return (
       <div>
-        <Tabs defaultActiveKey="free_entry" id="form-tab" className="mb-3" transition={false} onSelect={this.handleTabs}>
+        <Tabs id="form-tab"
+              activeKey={this.state.tab_key}
+              className="mb-3"
+              transition={false}
+              onSelect={this.handleTabs}>
           <Tab eventKey="free_entry" title="Free Entry">
             <FreeEntryForm data_class={this}/>
           </Tab>

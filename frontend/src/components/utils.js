@@ -34,3 +34,16 @@ export function capitalize(s)
 {
     return s[0].toUpperCase() + s.slice(1);
 }
+
+export function formatArgumentsForMultiSelect(arg_array, info_array) {
+  let ret_array = [];
+  //TODO: Rewrite something more efficient - sort arg array and go through both only once
+  for (var i of info_array) {
+    for (var j of arg_array) {
+      if (i.id == j) {
+        ret_array.push(i);
+      }
+    }
+  }
+  return ret_array;
+}

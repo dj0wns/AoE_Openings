@@ -1,5 +1,6 @@
 import React, {Component} from 'react';
 import Multiselect from 'multiselect-react-dropdown';
+import {formatArgumentsForMultiSelect} from "./utils"
 
 class Input extends Component {
   state = {
@@ -49,61 +50,49 @@ class Input extends Component {
     this.initial_setup = false
   }
 
-  formatArgumentsForMultiSelect(arg_array, info_array) {
-    let ret_array = [];
-    //TODO: Rewrite something more efficient - sort arg array and go through both only once
-    for (var i of info_array) {
-      for (var j of arg_array) {
-        if (i.id == j) {
-          ret_array.push(i);
-        }
-      }
-    }
-    return ret_array;
-  }
   setInitialSelected() {
     //Set Query params to form values, has to be done here or the drop downs arent populated
     var include_ladder_ids = [];
     if (this.search_params.get('include_ladder_ids')){
       include_ladder_ids = this.search_params.get('include_ladder_ids').split(",").map(Number);
-      include_ladder_ids = this.formatArgumentsForMultiSelect(include_ladder_ids, this.state.info.ladders)
+      include_ladder_ids = formatArgumentsForMultiSelect(include_ladder_ids, this.state.info.ladders)
     }
     var include_map_ids = [];
     if (this.search_params.get('include_map_ids')){
       include_map_ids = this.search_params.get('include_map_ids').split(",").map(Number);
-      include_map_ids = this.formatArgumentsForMultiSelect(include_map_ids, this.state.info.maps)
+      include_map_ids = formatArgumentsForMultiSelect(include_map_ids, this.state.info.maps)
     }
     var include_patch_ids = [];
     if (this.search_params.get('include_patch_ids')){
       include_patch_ids = this.search_params.get('include_patch_ids').split(",").map(Number);
-      include_patch_ids = this.formatArgumentsForMultiSelect(include_patch_ids, this.state.info.patches);
+      include_patch_ids = formatArgumentsForMultiSelect(include_patch_ids, this.state.info.patches);
     } else {
       include_patch_ids = [this.state.info.patches[0]];
     }
     var include_civ_ids = []
     if (this.search_params.get('include_civ_ids')){
       include_civ_ids = this.search_params.get('include_civ_ids').split(",").map(Number);
-      include_civ_ids = this.formatArgumentsForMultiSelect(include_civ_ids, this.state.info.civs)
+      include_civ_ids = formatArgumentsForMultiSelect(include_civ_ids, this.state.info.civs)
     }
     var exclude_civ_ids = [];
     if (this.search_params.get('exclude_civ_ids')){
       exclude_civ_ids = this.search_params.get('exclude_civ_ids').split(",").map(Number);
-      exclude_civ_ids = this.formatArgumentsForMultiSelect(exclude_civ_ids, this.state.info.civs)
+      exclude_civ_ids = formatArgumentsForMultiSelect(exclude_civ_ids, this.state.info.civs)
     }
     var clamp_civ_ids = [];
     if (this.search_params.get('clamp_civ_ids')){
       clamp_civ_ids = this.search_params.get('clamp_civ_ids').split(",").map(Number);
-      clamp_civ_ids = this.formatArgumentsForMultiSelect(clamp_civ_ids, this.state.info.civs)
+      clamp_civ_ids = formatArgumentsForMultiSelect(clamp_civ_ids, this.state.info.civs)
     }
     var include_opening_ids = []
     if (this.search_params.get('include_opening_ids')){
       include_opening_ids = this.search_params.get('include_opening_ids').split(",").map(Number);
-      include_opening_ids = this.formatArgumentsForMultiSelect(include_opening_ids, this.state.info.openings)
+      include_opening_ids = formatArgumentsForMultiSelect(include_opening_ids, this.state.info.openings)
     }
     var include_tech_ids = []
     if (this.search_params.get('include_tech_ids')){
       include_tech_ids = this.search_params.get('include_tech_ids').split(",").map(Number);
-      include_tech_ids = this.formatArgumentsForMultiSelect(include_tech_ids, this.state.info.techs)
+      include_tech_ids = formatArgumentsForMultiSelect(include_tech_ids, this.state.info.techs)
     }
     var min_elo_value = 0;
     if (this.search_params.get('min_elo') != null) {
