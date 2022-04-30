@@ -347,11 +347,17 @@ def generate_q_parameters_for_player(player_id, opening_ids, civ_ids, profile_id
   if civ_ids == [-1]:
     civ_ids.clear()
    #if no valid sets return
-  if not opening_ids and not civ_ids:
+  if not len(opening_ids) and not len(civ_ids) and not profile_id:
     return ""
   ret_string = "("
   if profile_id:
-    ret_string += f'Q(player{player_id}_id={profile_id})&'
+    ret_string += f'Q(player{player_id}_id={profile_id})'
+    if opening_ids or civ_ids:
+      ret_string += '&'
+    else:
+      #no other params so close and return
+      ret_string += ")"
+      return ret_string
   ret_string += "(("
   for opening_id in opening_ids:
     ret_string += "("
@@ -446,13 +452,16 @@ def generate_aggregate_statements_for_advanced_queue(data):
     if len(data[f'include_civ_ids_{i+1}']) > 1:
       data[f'include_civ_ids_{i+1}'] = [data[f'include_civ_ids_{i+1}'][0]]
     profile_id = int(data.get('left_player_id',0))
-    left_strings_p1 = generate_q_parameters_for_player(1, data[f'include_opening_ids_{i}'], data[f'include_civ_ids_{i}'], profile_id)
-    left_strings_p2 = generate_q_parameters_for_player(2, data[f'include_opening_ids_{i}'], data[f'include_civ_ids_{i}'], 0)
-    right_strings_p1 = generate_q_parameters_for_player(1, data[f'include_opening_ids_{i+1}'], data[f'include_civ_ids_{i+1}'], profile_id)
-    right_strings_p2 = generate_q_parameters_for_player(2, data[f'include_opening_ids_{i+1}'], data[f'include_civ_ids_{i+1}'], 0)
-    if not len(left_strings_p1) + len(right_strings_p2):
+    if (data[f'include_opening_ids_{i}'] == [-1]
+        and data[f'include_civ_ids_{i}'] == [-1]
+        and data[f'include_opening_ids_{i+1}'] == [-1]
+        and data[f'include_civ_ids_{i+1}'] == [-1]):
       #if neither has any selections, skip
       continue
+    left_strings_p1 = generate_q_parameters_for_player(1, data[f'include_opening_ids_{i}'], data[f'include_civ_ids_{i}'], profile_id)
+    left_strings_p2 = generate_q_parameters_for_player(2, data[f'include_opening_ids_{i+1}'], data[f'include_civ_ids_{i+1}'], 0)
+    right_strings_p1 = generate_q_parameters_for_player(1, data[f'include_opening_ids_{i}'], data[f'include_civ_ids_{i}'], profile_id)
+    right_strings_p2 = generate_q_parameters_for_player(2, data[f'include_opening_ids_{i+1}'], data[f'include_civ_ids_{i+1}'], 0)
     matchup_name = civ_and_opening_ids_to_string(data[f'include_civ_ids_{i}'], data[f'include_opening_ids_{i}'])
     matchup_name += '__vs__'
     matchup_name += civ_and_opening_ids_to_string(data[f'include_civ_ids_{i+1}'], data[f'include_opening_ids_{i+1}'])
