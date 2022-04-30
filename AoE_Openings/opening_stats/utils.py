@@ -148,7 +148,7 @@ def query_string_to_data_dict(string):
   ret_dict = dict(urllib.parse.parse_qsl(string))
   #fix data to lists for relevant fields
   for k,v in ret_dict.items():
-    if k == 'max_elo' or k == 'min_elo' or k == 'exclude_mirrors':
+    if k == 'max_elo' or k == 'min_elo' or k == 'exclude_mirrors' or k == "left_player_id":
       continue
     #rest are lists
     ret_dict[k] = [int(i) for i in v.split(",")]
@@ -193,6 +193,8 @@ def parse_advanced_post_parameters(request, default_exclude_mirrors) :
   error_code = False
   data['min_elo'] = request.data.get('min_elo', 0)
   data['max_elo'] = request.data.get('max_elo', 3000)
+  data['left_player_id'] = request.data.get('left_player_id', 0)
+
   data['include_ladder_ids'] = request.data.get('include_ladder_ids', [-1])
   error_code = False if check_list_of_ints(data['include_ladder_ids']) else 400
   #default to newest patch if none selected
@@ -201,6 +203,7 @@ def parse_advanced_post_parameters(request, default_exclude_mirrors) :
 
   data['include_map_ids'] = request.data.get('include_map_ids', [-1])
   error_code = False if check_list_of_ints(data['include_map_ids']) else 400
+
   #Allow up to 3 sets of players per query
   for i in range(ADVANCED_QUERY_COUNT*2):
     data[f'include_civ_ids_{i}'] = request.data.get(f'include_civ_ids_{i}', [-1])
@@ -229,6 +232,8 @@ def parse_advanced_post_parameters(request, default_exclude_mirrors) :
   if not isinstance(data['min_elo'], int):
     error_code = 400
   if not isinstance(data['max_elo'], int):
+    error_code = 400
+  if not isinstance(data['left_player_id'], int):
     error_code = 400
   if error_code:
     return data, error_code
@@ -335,7 +340,7 @@ def ProcessNextElementInAdvancedQueue():
   print(end - start)
   return True
 
-def generate_q_parameters_for_player(player_id, opening_ids, civ_ids):
+def generate_q_parameters_for_player(player_id, opening_ids, civ_ids, profile_id):
   #remove any invalid sets
   if opening_ids == [-1]:
     opening_ids.clear()
@@ -344,7 +349,10 @@ def generate_q_parameters_for_player(player_id, opening_ids, civ_ids):
    #if no valid sets return
   if not opening_ids and not civ_ids:
     return ""
-  ret_string = "(("
+  ret_string = "("
+  if profile_id:
+    ret_string += f'Q(player{player_id}_id={profile_id})&'
+  ret_string += "(("
   for opening_id in opening_ids:
     ret_string += "("
     opening = OPENINGS[opening_id]
@@ -396,7 +404,7 @@ def generate_q_parameters_for_player(player_id, opening_ids, civ_ids):
       if not civ_id == civ_ids[-1]:
         ret_string += '|'
 
-  ret_string += '))'
+  ret_string += ')))'
   return ret_string
 
 
@@ -437,10 +445,11 @@ def generate_aggregate_statements_for_advanced_queue(data):
       data[f'include_opening_ids_{i+1}'] = [data[f'include_opening_ids_{i+1}'][0]]
     if len(data[f'include_civ_ids_{i+1}']) > 1:
       data[f'include_civ_ids_{i+1}'] = [data[f'include_civ_ids_{i+1}'][0]]
-    left_strings_p1 = generate_q_parameters_for_player(1, data[f'include_opening_ids_{i}'], data[f'include_civ_ids_{i}'])
-    left_strings_p2 = generate_q_parameters_for_player(2, data[f'include_opening_ids_{i}'], data[f'include_civ_ids_{i}'])
-    right_strings_p1 = generate_q_parameters_for_player(1, data[f'include_opening_ids_{i+1}'], data[f'include_civ_ids_{i+1}'])
-    right_strings_p2 = generate_q_parameters_for_player(2, data[f'include_opening_ids_{i+1}'], data[f'include_civ_ids_{i+1}'])
+    profile_id = data.get('left_player_id',0)
+    left_strings_p1 = generate_q_parameters_for_player(1, data[f'include_opening_ids_{i}'], data[f'include_civ_ids_{i}'], profile_id)
+    left_strings_p2 = generate_q_parameters_for_player(2, data[f'include_opening_ids_{i}'], data[f'include_civ_ids_{i}'], profile_id)
+    right_strings_p1 = generate_q_parameters_for_player(1, data[f'include_opening_ids_{i+1}'], data[f'include_civ_ids_{i+1}'], profile_id)
+    right_strings_p2 = generate_q_parameters_for_player(2, data[f'include_opening_ids_{i+1}'], data[f'include_civ_ids_{i+1}'], profile_id)
     if not len(left_strings_p1) + len(right_strings_p2):
       #if neither has any selections, skip
       continue

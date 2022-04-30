@@ -75,6 +75,7 @@ class Advanced extends Component {
         // POST_PARAMS
         min_elo:0,
         max_elo:3000,
+        left_player_id:0,
         include_patch_ids:[],
         include_ladder_ids:[],
         include_map_ids:[],
@@ -106,6 +107,7 @@ class Advanced extends Component {
     var post_params = {}
     post_params.min_elo = this.state.min_elo;
     post_params.max_elo = this.state.max_elo;
+    post_params.left_player_id = this.state.left_player_id;
     post_params.include_patch_ids = this.state.include_patch_ids;
     post_params.include_ladder_ids = this.state.include_ladder_ids;
     post_params.include_map_ids = this.state.include_map_ids;
@@ -130,6 +132,9 @@ class Advanced extends Component {
     }
     if (query.get("max_elo")) {
       this.setState({max_elo:parseInt(query.get("max_elo"))})
+    }
+    if (query.get("left_player_id")) {
+      this.setState({left_player_id:parseInt(query.get("left_player_id"))})
     }
     if (query.get("include_patch_ids")) {
       initial_selected.include_patch_ids =

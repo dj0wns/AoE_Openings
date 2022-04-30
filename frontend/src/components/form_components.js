@@ -6,7 +6,7 @@ export const ADVANCED_QUERY_COUNT = 50;
 export const GeneralInput = ({data_class}) => (
   <div>
     <div class="form-row">
-      <div class="form-group col-md-6 mx-auto">
+      <div class="form-group col-md-4 mx-auto">
         <label for="min_elo">Min Elo</label>
         <input type="number"
                class="form-control"
@@ -18,7 +18,7 @@ export const GeneralInput = ({data_class}) => (
                value={data_class.state.min_elo}
                onChange={data_class.handleChange}/>
       </div>
-      <div class="form-group col-md-6 mx-auto">
+      <div class="form-group col-md-4 mx-auto">
         <label for="max_elo">Max Elo</label>
         <input type="number"
                class="form-control"
@@ -28,6 +28,16 @@ export const GeneralInput = ({data_class}) => (
                min="0"
                max="3000"
                value={data_class.state.max_elo}
+               onChange={data_class.handleChange}/>
+      </div>
+      <div class="form-group col-md-4 mx-auto">
+        <label for="left_player_id">Left player aoe2.net id</label>
+        <input type="number"
+               class="form-control"
+               id="left_player_id"
+               name="left_player_id"
+               min="0"
+               value={data_class.state.left_player_id}
                onChange={data_class.handleChange}/>
       </div>
     </div>
