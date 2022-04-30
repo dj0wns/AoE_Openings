@@ -375,7 +375,7 @@ def generate_q_parameters_for_player(player_id, opening_ids, civ_ids, profile_id
       if i < len(inclusions) - 1:
         ret_string += '|'
     # close inclusions
-    ret_string += '&'
+    ret_string += ')&('
 
     #convert exclusions to flags
     for i in range(len(exclusions)):
@@ -390,11 +390,11 @@ def generate_q_parameters_for_player(player_id, opening_ids, civ_ids, profile_id
       # close inclusion
       ret_string += ')'
       if i < len(exclusions) - 1:
-        ret_string += '|'
+        ret_string += '&'
     # close exclusion
     ret_string += ')'
     if not opening_id == opening_ids[-1]:
-      ret_string += '|'
+      ret_string += '&'
   if opening_ids and civ_ids:
     #close openings
     ret_string += ')&('
