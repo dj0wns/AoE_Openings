@@ -447,9 +447,9 @@ def generate_aggregate_statements_for_advanced_queue(data):
       data[f'include_civ_ids_{i+1}'] = [data[f'include_civ_ids_{i+1}'][0]]
     profile_id = int(data.get('left_player_id',0))
     left_strings_p1 = generate_q_parameters_for_player(1, data[f'include_opening_ids_{i}'], data[f'include_civ_ids_{i}'], profile_id)
-    left_strings_p2 = generate_q_parameters_for_player(2, data[f'include_opening_ids_{i}'], data[f'include_civ_ids_{i}'], profile_id)
+    left_strings_p2 = generate_q_parameters_for_player(2, data[f'include_opening_ids_{i}'], data[f'include_civ_ids_{i}'], 0)
     right_strings_p1 = generate_q_parameters_for_player(1, data[f'include_opening_ids_{i+1}'], data[f'include_civ_ids_{i+1}'], profile_id)
-    right_strings_p2 = generate_q_parameters_for_player(2, data[f'include_opening_ids_{i+1}'], data[f'include_civ_ids_{i+1}'], profile_id)
+    right_strings_p2 = generate_q_parameters_for_player(2, data[f'include_opening_ids_{i+1}'], data[f'include_civ_ids_{i+1}'], 0)
     if not len(left_strings_p1) + len(right_strings_p2):
       #if neither has any selections, skip
       continue
