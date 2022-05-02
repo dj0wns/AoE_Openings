@@ -47,7 +47,10 @@ class Info(generics.ListAPIView):
     patch_list = []
     for patch in patches:
       if patch['id'] > 0:
-        patch_list.append({'name':patch['id'], 'id':patch['id']})
+        if patch['description']:
+          patch_list.append({'name':f'{patch["id"]} ({patch["description"]})', 'id':patch['id']})
+        else:
+          patch_list.append({'name':patch['id'], 'id':patch['id']})
     ret_dict["patches"] = patch_list
 
     for name, value in aoe_data["civ_names"].items():

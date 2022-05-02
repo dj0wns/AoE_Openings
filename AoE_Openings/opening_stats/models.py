@@ -160,7 +160,7 @@ class Ladders(models.Model):
 
 #const table for storing specific ladder names and ids
 class Patches(models.Model):
-
+  description = models.TextField(blank=True, null=True)
   class Meta:
     db_table = 'patches'
 
