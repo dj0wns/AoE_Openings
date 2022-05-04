@@ -5,8 +5,14 @@ import {Tabs, Tab} from 'react-bootstrap';
 import {cartesian, stringifyNumber, formatArgumentsForMultiSelect} from "./utils";
 import {GeneralInput, SubmitButton, AdvancedFreeEntry, AdvancedCombinationEntry, ADVANCED_QUERY_COUNT} from './form_components';
 
+// See comment in state.position for how these are activated
 const StatusText = ({data_class, columns}) => (
   <div>
+    { data_class.state.position == -4 &&
+        <div class="queue">
+          <h3> Something went wrong, double check your input and try again. If that doesn't work refresh the page.</h3>
+        </div>
+    }
     { data_class.state.position == -3 &&
         <div class="queue">
           <h3> Your request requires too many rows to be processed. The maximum amount is 50. </h3>
@@ -53,6 +59,7 @@ class Advanced extends Component {
     this.state = {
         info: {civs:[], ladders:[], maps:[], patches:[], openings:[], techs:[]},
         // Position:
+        // -4 Error: Something was bad with the input and we got an error from the server.
         // -3 Error: too many combinations selected - total selected / max selected
         // -2 means nothing
         // -1 means data or response received from server
@@ -340,6 +347,7 @@ class Advanced extends Component {
 
       })
       .catch((error) => {
+        this.setState({ position: -4});
         console.log(error)
       })
 
@@ -386,6 +394,15 @@ class Advanced extends Component {
         {
           name: "Name",
           selector: row => row.name,
+          cell: row => <>
+              {row.left_image &&
+                <img width="32" height="32" src={"/static/" + row.left_image}/>
+              }
+              <div>{row.name}</div>
+              {row.right_image &&
+                <img width="32" height="32" src={"/static/" + row.right_image}/>
+              }
+            </>,
           sortable: true,
         },
         {

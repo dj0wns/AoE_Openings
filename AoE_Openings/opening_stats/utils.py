@@ -258,6 +258,19 @@ def count_response_to_dict(sql_response) :
         data[name] = {}
       data[name][type] = value
       data[name]["name"] = name
+  # go through each name and append a valid image field if relevant
+  for key in data.keys():
+    components = key.split("_vs_")
+    left = components[0]
+    right = components[1] if len(components) > 1 else ""
+    data[key]["left_image"] = ""
+    data[key]["right_image"] = ""
+    #inefficient to do it this way but it is what it is, fix someday O(n^2)
+    for value in CIV_IDS_TO_NAMES.values():
+      if value in left:
+        data[key]["left_image"] = f'{value.lower()}.png'
+      if value in right:
+        data[key]["right_image"] = f'{value.lower()}.png'
   return list(data.values())
 
 def count_tech_response_to_dict(sql_response, aoe_data) :
@@ -418,12 +431,12 @@ def civ_and_opening_ids_to_string(civ_ids, opening_ids) :
   ret_string = ""
   if len(civ_ids):
     if len(opening_ids):
-      return f'{CIV_IDS_TO_NAMES[civ_ids[0]]}_{OPENINGS[opening_ids[0]][0]}'
+      ret_string += f'{CIV_IDS_TO_NAMES[civ_ids[0]]}_{OPENINGS[opening_ids[0]][0]}'
     else:
-      return f'{CIV_IDS_TO_NAMES[civ_ids[0]]}'
+      ret_string += f'{CIV_IDS_TO_NAMES[civ_ids[0]]}'
   elif len(opening_ids):
-    return f'{OPENINGS[opening_ids[0]][0]}'
-  return ""
+    ret_string += f'{OPENINGS[opening_ids[0]][0]}'
+  return ret_string
 
 
 

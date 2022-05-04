@@ -48,6 +48,15 @@ class Civs extends Component {
         {
           name: "Name",
           selector: row => row.name,
+          cell: row => <>
+              {row.left_image &&
+                <img width="32" height="32" src={"/static/" + row.left_image}/>
+              }
+              <div>{row.name}</div>
+              {row.right_image &&
+                <img width="32" height="32" src={"/static/" + row.right_image}/>
+              }
+            </>,
           sortable: true,
         },
         {
