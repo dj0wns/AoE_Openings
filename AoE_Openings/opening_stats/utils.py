@@ -260,7 +260,7 @@ def count_response_to_dict(sql_response) :
       data[name]["name"] = name
   # go through each name and append a valid image field if relevant
   for key in data.keys():
-    components = key.split("_vs_")
+    components = key.split(" vs ")
     left = components[0]
     right = components[1] if len(components) > 1 else ""
     data[key]["left_image"] = ""
