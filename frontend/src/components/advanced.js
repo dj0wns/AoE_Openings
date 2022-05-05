@@ -83,6 +83,8 @@ class Advanced extends Component {
         min_elo:0,
         max_elo:3000,
         left_player_id:0,
+        exclude_civ_mirrors:false,
+        exclude_opening_mirrors:false,
         include_patch_ids:[],
         include_ladder_ids:[],
         include_map_ids:[],
@@ -100,6 +102,7 @@ class Advanced extends Component {
     }
 
     this.handleChange = this.handleChange.bind(this);
+    this.handleCheckboxChange = this.handleCheckboxChange.bind(this);
     this.handleTabs = this.handleTabs.bind(this);
     this.handleRowChange = this.handleRowChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -115,6 +118,8 @@ class Advanced extends Component {
     post_params.min_elo = this.state.min_elo;
     post_params.max_elo = this.state.max_elo;
     post_params.left_player_id = this.state.left_player_id;
+    post_params.exclude_civ_mirrors = this.state.exclude_civ_mirrors;
+    post_params.exclude_opening_mirrors = this.state.exclude_opening_mirrors;
     post_params.include_patch_ids = this.state.include_patch_ids;
     post_params.include_ladder_ids = this.state.include_ladder_ids;
     post_params.include_map_ids = this.state.include_map_ids;
@@ -142,6 +147,12 @@ class Advanced extends Component {
     }
     if (query.get("left_player_id")) {
       this.setState({left_player_id:parseInt(query.get("left_player_id"))})
+    }
+    if (query.get("exclude_civ_mirrors")) {
+      this.setState({exclude_civ_mirrors:parseInt(query.get("exclude_civ_mirrors"))})
+    }
+    if (query.get("exclude_opening_mirrors")) {
+      this.setState({exclude_opening_mirrors:parseInt(query.get("exclude_opening_mirrors"))})
     }
     if (query.get("include_patch_ids")) {
       initial_selected.include_patch_ids =
@@ -361,10 +372,11 @@ class Advanced extends Component {
   handleRowChange(e) {
     const target = e.target;
     const name = target.name;
-    const value = target.value;
-    this.setState({row_count:parseInt(target.value)})
+    const value = parseInt(target.value);
+    this.setState({row_count:value})
     // Clear post params so data isnt double saved
-    for (var i=target.value; i < ADVANCED_QUERY_COUNT*2; ++i) {
+    // TODO: Right now doesnt clear the input value, just the local value of unused rows
+    for (var i=value*2; i < ADVANCED_QUERY_COUNT*2; ++i) {
       this.setState({["include_civ_ids_" + i]:[]})
       this.setState({["include_opening_ids_" + i]:[]})
     }
@@ -373,8 +385,19 @@ class Advanced extends Component {
     const target = e.target;
     const name = target.name;
     const value = target.value;
+    if (value == "") {
+      value = "0";
+    }
     this.setState({
       [name]: parseInt(value)
+    });
+  }
+  handleCheckboxChange(e) {
+    const target = e.target;
+    const name = target.name;
+    const value = target.checked;
+    this.setState({
+      [name]: value
     });
   }
   handleTabs(key) {

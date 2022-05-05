@@ -148,7 +148,12 @@ def query_string_to_data_dict(string):
   ret_dict = dict(urllib.parse.parse_qsl(string))
   #fix data to lists for relevant fields
   for k,v in ret_dict.items():
-    if k == 'max_elo' or k == 'min_elo' or k == 'exclude_mirrors' or k == "left_player_id":
+    if (k == 'max_elo' or
+        k == 'min_elo' or
+        k == 'exclude_mirrors' or
+        k == 'exclude_civ_mirrors' or
+        k == 'exclude_opening_mirrors' or
+        k == "left_player_id"):
       continue
     #rest are lists
     ret_dict[k] = [int(i) for i in v.split(",")]
@@ -194,6 +199,8 @@ def parse_advanced_post_parameters(request, default_exclude_mirrors) :
   data['min_elo'] = request.data.get('min_elo', 0)
   data['max_elo'] = request.data.get('max_elo', 3000)
   data['left_player_id'] = request.data.get('left_player_id', 0)
+  data['exclude_civ_mirrors'] = request.data.get('exclude_civ_mirrors', False)
+  data['exclude_opening_mirrors'] = request.data.get('exclude_opening_mirrors', False)
 
   data['include_ladder_ids'] = request.data.get('include_ladder_ids', [-1])
   error_code = False if check_list_of_ints(data['include_ladder_ids']) else 400
@@ -234,6 +241,10 @@ def parse_advanced_post_parameters(request, default_exclude_mirrors) :
   if not isinstance(data['max_elo'], int):
     error_code = 400
   if not isinstance(data['left_player_id'], int):
+    error_code = 400
+  if not isinstance(data['exclude_civ_mirrors'], bool):
+    error_code = 400
+  if not isinstance(data['exclude_opening_mirrors'], bool):
     error_code = 400
   if error_code:
     return data, error_code
@@ -475,6 +486,20 @@ def generate_aggregate_statements_for_advanced_queue(data):
     left_strings_p2 = generate_q_parameters_for_player(2, data[f'include_opening_ids_{i}'], data[f'include_civ_ids_{i}'], profile_id)
     right_strings_p1 = generate_q_parameters_for_player(1, data[f'include_opening_ids_{i+1}'], data[f'include_civ_ids_{i+1}'], 0)
     right_strings_p2 = generate_q_parameters_for_player(2, data[f'include_opening_ids_{i+1}'], data[f'include_civ_ids_{i+1}'], 0)
+
+    # Remove opening mirrors
+    if 'exclude_opening_mirrors' in data and data['exclude_opening_mirrors'] == 'True':
+      left_strings_openings_p1 = generate_q_parameters_for_player(1, data[f'include_opening_ids_{i}'], [], 0)
+      left_strings_openings_p2 = generate_q_parameters_for_player(2, data[f'include_opening_ids_{i}'], [], 0)
+      if left_strings_openings_p1:
+        if right_strings_p1:
+          right_strings_p1 += '&'
+        right_strings_p1 += '~(' + left_strings_openings_p1 + ')'
+      if left_strings_openings_p2:
+        if right_strings_p2:
+          right_strings_p2 += '&'
+        right_strings_p2 += '~(' + left_strings_openings_p2 + ')'
+
     matchup_name = civ_and_opening_ids_to_string(data[f'include_civ_ids_{i}'], data[f'include_opening_ids_{i}'])
     matchup_name += '__vs__'
     matchup_name += civ_and_opening_ids_to_string(data[f'include_civ_ids_{i+1}'], data[f'include_opening_ids_{i+1}'])
@@ -638,6 +663,8 @@ def generate_filter_statements_from_parameters(data, table_prefix = "", include_
             filter_string += f'Q({table_prefix}map_id={map_id})'
             count += 1
         filter_string += ","
+    if 'exclude_civ_mirrors' in data and data['exclude_civ_mirrors'] == 'True':
+      filter_string += f'~Q({table_prefix}player1_civilization=F("{table_prefix}player2_civilization")),'
 
     filter_string += f'{table_prefix}{elo_string}__gte={data["min_elo"]},'
     filter_string += f'{table_prefix}{elo_string}__lte={data["max_elo"]}'
