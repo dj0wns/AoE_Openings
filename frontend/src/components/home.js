@@ -16,7 +16,7 @@ class Home extends Component {
         <div class='text-div'>
           <h2>Update (May 6, 2022)</h2>
           <p>
-            The big release of the Advanced Query interface! Now you can query far more specific matchups as well look up personal stats with your aoe2.net profile id. This id can be found as the trailing numbers on your aoe2.net profile page. For example, Vinchesters's profile link is <a href="https://aoe2.net/#profile-271202">https://aoe2.net/#profile-271202</a> and therefore his profile id is 271202. Every completed response in the advanced query interface will create a unique link that can be copied referenced at any point in the future to see that same data again. This has been a huge project and I am thrilled that it is finally ready to go public!
+            The big release of the Advanced Query interface! Now you can query far more specific matchups as well look up personal stats with your aoe2.net profile id. This id can be found as the trailing numbers on your aoe2.net profile page. For example, Vinchesters's profile link is <a href="https://aoe2.net/#profile-271202">https://aoe2.net/#profile-271202</a> and therefore his profile id is 271202. Every completed response in the advanced query interface will create a unique link that can be copied and referenced at any point in the future to see that same data again. This has been a huge project and I am thrilled that it is finally ready to go public! Also, we have finally passed 3 million parsed replays! So much data!
           </p>
           <h2>Update (Jan 5, 2022)</h2>
           <p>
