@@ -56,12 +56,14 @@ class OpeningWins extends Component {
           // if -1 just show 50%, else calculate the correct percent
           format: row => (row.wins / (row.losses + row.wins)  * 100).toFixed(2)+'% (' + row.wins + ')',
           sortable: true,
+          defaultSortAsc: false,
         },
         {
           name: "Play Rate",
           selector: row => row.total,
           format: row => (row.total/this.state.openings.total*100/2).toFixed(2)+'% (' + row.total + ')',
           sortable: true,
+          defaultSortAsc: false,
         }
     ]
     if (this.state.openings.hasOwnProperty("openings_list")) {

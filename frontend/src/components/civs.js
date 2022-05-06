@@ -64,12 +64,14 @@ class Civs extends Component {
           selector: row => row.wins / row.total,
           format: row => (row.wins / row.total * 100).toFixed(2)+'% (' + row.wins + ')',
           sortable: true,
+          defaultSortAsc: false,
         },
         {
           name: "Play Rate",
           selector: row => row.total,
           format: row => (row.total/this.state.civilizations.total*100/2).toFixed(2)+'% (' + row.total + ')',
           sortable: true,
+          defaultSortAsc: false,
         }
     ]
     if (this.state.civilizations.hasOwnProperty("civs_list")) {
