@@ -149,10 +149,10 @@ class Advanced extends Component {
       this.setState({left_player_id:parseInt(query.get("left_player_id"))})
     }
     if (query.get("exclude_civ_mirrors")) {
-      this.setState({exclude_civ_mirrors:parseInt(query.get("exclude_civ_mirrors"))})
+      this.setState({exclude_civ_mirrors:query.get("exclude_civ_mirrors") == 'True'})
     }
     if (query.get("exclude_opening_mirrors")) {
-      this.setState({exclude_opening_mirrors:parseInt(query.get("exclude_opening_mirrors"))})
+      this.setState({exclude_opening_mirrors:query.get("exclude_opening_mirrors") == 'True'})
     }
     if (query.get("include_patch_ids")) {
       initial_selected.include_patch_ids =
@@ -375,11 +375,15 @@ class Advanced extends Component {
     const value = parseInt(target.value);
     this.setState({row_count:value})
     // Clear post params so data isnt double saved
-    // TODO: Right now doesnt clear the input value, just the local value of unused rows
+    // Also clear the relevant selection lists
+    var initial_selected = this.state.initial_selected
     for (var i=value*2; i < ADVANCED_QUERY_COUNT*2; ++i) {
       this.setState({["include_civ_ids_" + i]:[]})
       this.setState({["include_opening_ids_" + i]:[]})
+      initial_selected["include_civ_ids_" + i] = []
+      initial_selected["include_opening_ids_" + i] = []
     }
+    this.setState({initial_selected:initial_selected})
   }
   handleChange(e) {
     const target = e.target;
