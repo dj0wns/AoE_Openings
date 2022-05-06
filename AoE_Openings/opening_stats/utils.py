@@ -362,7 +362,6 @@ def ProcessNextElementInAdvancedQueue():
   adv_query.time_completed = django.utils.timezone.now()
   adv_query.result = result
   adv_query.save()
-  print(matches)
   end = time.time()
   print(end - start)
   return True
@@ -456,7 +455,6 @@ def civ_and_opening_ids_to_string(civ_ids, opening_ids) :
 
 def generate_aggregate_statements_for_advanced_queue(data):
   aggregate_string = f'.aggregate('
-  print(data)
   for i in range(0, ADVANCED_QUERY_COUNT*2, 2):
     #Skip row if it doesnt have all data and give blank array so we dont hit a value not exists error
     if f'include_opening_ids_{i}' not in data and f'include_civ_ids_{i}' not in data and f'include_opening_ids_{i+1}' not in data and f'include_civ_ids_{i+1}' not in data:

@@ -31,7 +31,7 @@ const StatusText = ({data_class, columns}) => (
     }
     { data_class.state.position > 0 &&
         <div class="queue">
-          <h3> You request is {stringifyNumber(data_class.state.position+1)} in the queue! Each item in the queue may take up to a few minutes to process.</h3>
+          <h3> You request is {data_class.state.position+1} in the queue! Each item in the queue may take up to a few minutes to process.</h3>
         </div>
     }
   </div>
@@ -435,8 +435,8 @@ class Advanced extends Component {
         {
           name: "Win Rate",
           // if -1 just show 50%, else calculate the correct percent
-          selector: row => (row.wins == -1) ? 0.5 : row.wins / row.total,
-          format: row => (row.wins == -1) ? '50.00% (Mirror)' : (row.wins / row.total * 100).toFixed(2)+'% (' + row.wins + ')',
+          selector: row => (row.total == 0) ? 0 : row.wins / row.total,
+          format: row => (row.total == 0) ? 'No games found' : (row.wins / row.total * 100).toFixed(2)+'% (' + row.wins + ')',
           sortable: true,
         },
         {
