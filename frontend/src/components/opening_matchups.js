@@ -53,17 +53,15 @@ class OpeningWins extends Component {
         {
           name: "Win Rate",
           // if -1 just show 50%, else calculate the correct percent
-          selector: row => (row.wins == -1) ? 0.5 : row.wins / row.total,
+          selector: row => -((row.wins == -1) ? 0.5 : row.wins / row.total),
           format: row => (row.wins == -1) ? '50.00% (Mirror)' : (row.wins / row.total * 100).toFixed(2)+'% (' + row.wins + ')',
           sortable: true,
-          defaultSortAsc: false,
         },
         {
           name: "Play Rate",
-          selector: row => row.total,
+          selector: row => -(row.total),
           format: row => (row.total/this.state.openings.total*100).toFixed(2)+'% (' + row.total + ')',
           sortable: true,
-          defaultSortAsc: false,
         }
     ]
     if (this.state.openings.hasOwnProperty("openings_list")) {

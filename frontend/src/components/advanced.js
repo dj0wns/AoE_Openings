@@ -435,17 +435,15 @@ class Advanced extends Component {
         {
           name: "Win Rate",
           // if 0 just show no games, else calculate the correct percent
-          selector: row => (row.total == 0) ? 0 : row.wins / row.total,
+          selector: row => -((row.total == 0) ? 0 : row.wins / row.total),
           format: row => (row.total == 0) ? 'No games found' : (row.wins / row.total * 100).toFixed(2)+'% (' + row.wins + ')',
           sortable: true,
-          defaultSortAsc: false,
         },
         {
           name: "Total Games",
-          selector: row => row.total,
+          selector: row => -(row.total),
           format: row => row.total,
           sortable: true,
-          defaultSortAsc: false,
         }
     ]
     return (
