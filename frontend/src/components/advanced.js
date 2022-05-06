@@ -176,7 +176,7 @@ class Advanced extends Component {
     initial_selected.include_left_civ_combinations = []
     var index = -1 ;
     if (query.get("include_left_civ_combinations")) {
-      var ids = query.get("include_left_civ_combinations").split(",").map(Number)
+      let ids = query.get("include_left_civ_combinations").split(",").map(Number)
       // Remove -1 if exists
       if ((index = ids.indexOf(-1)) > -1) ids.splice(index,1)
       initial_selected.include_left_civ_combinations =
@@ -185,7 +185,7 @@ class Advanced extends Component {
     }
     initial_selected.include_left_opening_combinations = []
     if (query.get("include_left_opening_combinations")) {
-      var ids = query.get("include_left_opening_combinations").split(",").map(Number)
+      let ids = query.get("include_left_opening_combinations").split(",").map(Number)
       // Remove -1 if exists
       if ((index = ids.indexOf(-1)) > -1) ids.splice(index,1)
       initial_selected.include_left_opening_combinations =
@@ -194,7 +194,7 @@ class Advanced extends Component {
     }
     initial_selected.include_right_civ_combinations = []
     if (query.get("include_right_civ_combinations")) {
-      var ids = query.get("include_right_civ_combinations").split(",").map(Number)
+      let ids = query.get("include_right_civ_combinations").split(",").map(Number)
       // Remove -1 if exists
       if ((index = ids.indexOf(-1)) > -1) ids.splice(index,1)
       initial_selected.include_right_civ_combinations =
@@ -203,7 +203,7 @@ class Advanced extends Component {
     }
     initial_selected.include_right_opening_combinations = []
     if (query.get("include_right_opening_combinations")) {
-      var ids = query.get("include_right_opening_combinations").split(",").map(Number)
+      let ids = query.get("include_right_opening_combinations").split(",").map(Number)
       // Remove -1 if exists
       if ((index = ids.indexOf(-1)) > -1) ids.splice(index,1)
       initial_selected.include_right_opening_combinations =
@@ -388,7 +388,7 @@ class Advanced extends Component {
   handleChange(e) {
     const target = e.target;
     const name = target.name;
-    const value = target.value;
+    var value = target.value;
     if (value == "") {
       value = "0";
     }

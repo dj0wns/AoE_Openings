@@ -15,6 +15,7 @@ const Menu = () => {
             <Nav.Link href={"/opening_stats" + query}>Opening Stats</Nav.Link>
             <Nav.Link href={"/opening_matchups" + query}>Opening Matchups</Nav.Link>
             <Nav.Link href={"/opening_techs" + query}>Opening Tech Timings</Nav.Link>
+            <Nav.Link href={"/advanced"}>Advanced</Nav.Link>
           </Nav>
           <Nav className='ml-auto'>
             <Navbar.Brand href='https://ko-fi.com/M4M7BG61H'>
@@ -29,6 +30,5 @@ const Menu = () => {
     </div>
   );
 }
-//<Nav.Link href={"/advanced"}>Advanced</Nav.Link>
 
 export default Menu;

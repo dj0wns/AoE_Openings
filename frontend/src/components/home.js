@@ -6,9 +6,18 @@ class Home extends Component {
   render () {
     return (
       <div>
-        <MetaSnapshotChart/>
         <h1 class='page-title'>Welcome to AoE Pulse!</h1>
+        <MetaSnapshotChart/>
         <div class='text-div'>
+          <p>
+            AoEPulse is an Age of Empires 2 statistics website which parses and stores millions of replays to give never before seen insights on the effectiveness of the different core openings. The data is updated twice daily at 3:00 and 15:00 GMT. This site is primarily focused on 1v1 Arabia (due to it being the only map and mode with enough games to draw meaningful conclusions) but also provides any stats collected for all other maps and Empire Wars where possible. Openings may not be as accurate on these other maps or modes (specifically the different timings of Empire Wars and the uniqueness of nomad don't agree with the heuristics.) I hope these statistics help provide the insights you need to take your game to the next level!
+          </p>
+        </div>
+        <div class='text-div'>
+          <h2>Update (May 6, 2022)</h2>
+          <p>
+            The big release of the Advanced Query interface! Now you can query far more specific matchups as well look up personal stats with your aoe2.net profile id. This id can be found as the trailing numbers on your aoe2.net profile page. For example, Vinchesters's profile link is <a href="https://aoe2.net/#profile-271202">https://aoe2.net/#profile-271202</a> and therefore his profile id is 271202. Every completed response in the advanced query interface will create a unique link that can be copied referenced at any point in the future to see that same data again. This has been a huge project and I am thrilled that it is finally ready to go public!
+          </p>
           <h2>Update (Jan 5, 2022)</h2>
           <p>
             Added Straight FC and Unknown openings types to better represent the playerbase (not shown in graph). Openings matchup mirrors were also only half counted in play rate so this has been fixed. You may see a few percent changes in the above graph and on the Opening Stats page. Also added a small about page.
