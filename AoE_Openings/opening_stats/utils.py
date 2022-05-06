@@ -246,8 +246,11 @@ def parse_advanced_post_parameters(request, default_exclude_mirrors) :
     error_code = 400
   if not isinstance(data['exclude_opening_mirrors'], bool):
     error_code = 400
+  #early return if anything is the wrong type
   if error_code:
     return data, error_code
+
+  #value checking
   if data['min_elo'] < 0 or data['min_elo'] > 9000 or data['min_elo'] % 25:
     error_code = 400
   if data['max_elo'] < 0 or data['max_elo'] > 9000 or data['max_elo'] % 25:
