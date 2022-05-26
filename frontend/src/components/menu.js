@@ -14,7 +14,6 @@ const Menu = () => {
             <Nav.Link href={"/civ_stats" + query}>Civilization Stats</Nav.Link>
             <Nav.Link href={"/opening_stats" + query}>Opening Stats</Nav.Link>
             <Nav.Link href={"/opening_matchups" + query}>Opening Matchups</Nav.Link>
-            <Nav.Link href={"/opening_techs" + query}>Opening Tech Timings</Nav.Link>
             <Nav.Link href={"/advanced"}>Advanced</Nav.Link>
           </Nav>
           <Nav className='ml-auto'>

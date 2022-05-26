@@ -1,6 +1,6 @@
 [submodule "AoE_Rec_Opening_Analysis"]
 	path = AoE_Rec_Opening_Analysis
 	url = https://github.com/dj0wns/AoE_Rec_Opening_Analysis
-[submodule "AoE_Openings/opening_stats/AoE_Rec_Opening_Analysis"]
-	path = AoE_Openings/opening_stats/AoE_Rec_Opening_Analysis
-	url = https://github.com/dj0wns/AoE_Rec_Opening_Analysis
+[submodule "AoE_Openings/opening_stats/aoe2techtree"]
+	path = AoE_Openings/opening_stats/aoe2techtree
+	url = https://github.com/SiegeEngineers/aoe2techtree

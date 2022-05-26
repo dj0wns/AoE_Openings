@@ -4,3 +4,5 @@ djangorestframework
 mgz
 python-dotenv
 djangorestframework-api-key
+aoe-opening-data
+psycopg2

@@ -4,7 +4,7 @@ import {formatArgumentsForMultiSelect} from "./utils"
 
 class Input extends Component {
   state = {
-    info: {civs:[], ladders:[], maps:[], patches:[], openings:[], techs:[]},
+    info: {civs:[], ladders:[], maps:[], patches:[], openings:[]},
     min_elo_value: 0,
     max_elo_value: 3000,
     include_ladders: [],
@@ -14,14 +14,12 @@ class Input extends Component {
     exclude_civs: [],
     clamp_civs: [],
     include_openings: [],
-    include_techs: [],
 
   }
   constructor(props){
     super(props);
     this.callback = this.props.callback;
     this.exclude_mirror_default = this.props.defaultmirror
-    this.include_techs = this.props.include_techs
     this.include_openings = this.props.include_openings
     this.handleSubmit = this.handleSubmit.bind(this);
     this.setInitialSelected = this.setInitialSelected.bind(this);
@@ -41,8 +39,6 @@ class Input extends Component {
     this.handle_clamp_civs_remove = this.handle_clamp_civs_remove.bind(this);
     this.handle_include_openings_add = this.handle_include_openings_add.bind(this);
     this.handle_include_openings_remove = this.handle_include_openings_remove.bind(this);
-    this.handle_include_techs_add = this.handle_include_techs_add.bind(this);
-    this.handle_include_techs_remove = this.handle_include_techs_remove.bind(this);
     this.handle_checkbox_change = this.handle_checkbox_change.bind(this);
     this.handle_change = this.handle_change.bind(this);
     this.search_params = new URLSearchParams(this.props.parent_query)
@@ -88,11 +84,6 @@ class Input extends Component {
       include_opening_ids = this.search_params.get('include_opening_ids').split(",").map(Number);
       include_opening_ids = formatArgumentsForMultiSelect(include_opening_ids, this.state.info.openings)
     }
-    var include_tech_ids = []
-    if (this.search_params.get('include_tech_ids')){
-      include_tech_ids = this.search_params.get('include_tech_ids').split(",").map(Number);
-      include_tech_ids = formatArgumentsForMultiSelect(include_tech_ids, this.state.info.techs)
-    }
     var min_elo_value = 0;
     if (this.search_params.get('min_elo') != null) {
       min_elo_value = this.search_params.get('min_elo')
@@ -112,7 +103,6 @@ class Input extends Component {
         exclude_civs: exclude_civ_ids,
         clamp_civs: clamp_civ_ids,
         include_openings: include_opening_ids,
-        include_techs: include_tech_ids,
     })
   }
 
@@ -129,7 +119,6 @@ class Input extends Component {
     fetch('/api/v1/info/')
     .then(res => res.json())
     .then((data) => {
-      data.techs.sort(function(a,b){return a-b});
       this.setState({ info: data });
     })
     .catch(console.log)
@@ -166,9 +155,6 @@ class Input extends Component {
     }
     if (this.state.include_openings.length) {
       data_dict['include_opening_ids'] = this.state.include_openings.map(item => {return item.id});
-    }
-    if (this.state.include_techs.length) {
-      data_dict['include_tech_ids'] = this.state.include_techs.map(item => {return item.id});
     }
     this.callback(data_dict);
   }
@@ -286,19 +272,6 @@ class Input extends Component {
       })
     });
   }
-  handle_include_techs_add(selectedList, selectedItem) {
-    let new_civs = this.state.include_techs.concat(selectedItem);
-    this.setState({
-      include_techs: new_civs
-    });
-  }
-  handle_include_techs_remove(selectedList, selectedItem) {
-    this.setState({
-      include_techs: this.state.include_techs.filter(function(tech) {
-        return tech !== selectedItem
-      })
-    });
-  }
   render () {
     return (
       <div>
@@ -355,21 +328,6 @@ class Input extends Component {
                              onRemove={this.handle_include_openings_remove}/>
               </div>
             </div>
-            : <div/>
-          }
-          { this.include_techs
-            ?
-              <div class="form-row">
-                <div class="form-check col-md-6">
-                  <label for="include_techs">Include Techs</label>
-                  <Multiselect name="include_techs"
-                               options={this.state.info.techs}
-                               selectedValues={this.state.include_techs}
-                               displayValue='name'
-                               onSelect={this.handle_include_techs_add}
-                               onRemove={this.handle_include_techs_remove}/>
-                </div>
-              </div>
             : <div/>
           }
           <div class="form-row">

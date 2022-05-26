@@ -1,4 +1,4 @@
-from opening_stats.models import Players, Openings, Matches, MatchPlayerActions, Patches
+from opening_stats.models import Players, Openings, Matches, Patches
 from rest_framework import serializers
 
 class PlayersSerializer(serializers.ModelSerializer):
@@ -24,14 +24,8 @@ class MatchesSerializer(serializers.ModelSerializer):
     model = Matches
     fields = "__all__"
 
-class MatchPlayerActionsSerializer(serializers.ModelSerializer):
-  class Meta:
-    model = MatchPlayerActions
-    fields = "__all__"
-
 class MatchInputSerializer(serializers.Serializer):
   matches = MatchesSerializer(many=True)
-  match_player_actions = MatchPlayerActionsSerializer(many=True)
 
 class TestSerializer(serializers.Serializer):
   matches = serializers.CharField(max_length=200)

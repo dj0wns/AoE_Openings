@@ -6,15 +6,15 @@ from django.views.decorators.cache import never_cache
 from rest_framework import generics, views, status
 from rest_framework.renderers import JSONRenderer
 from rest_framework_api_key.permissions import HasAPIKey
-from opening_stats.models import Openings, Matches, MatchPlayerActions, Maps, Techs, Ladders, Patches, CivEloWins, OpeningEloWins, OpeningEloTechs, Players, AdvancedQueryResults, AdvancedQueryQueue
-from opening_stats.serializers import OpeningsSerializer, MatchesSerializer, MatchInputSerializer, TestSerializer, MatchPlayerActionsSerializer, PlayersSerializer, PatchesSerializer
+from opening_stats.models import Openings, Matches, Maps, Ladders, Patches, CivEloWins, OpeningEloWins, Players, AdvancedQueryResults, AdvancedQueryQueue
+from opening_stats.serializers import OpeningsSerializer, MatchesSerializer, MatchInputSerializer, TestSerializer, PlayersSerializer, PatchesSerializer
 from . import utils
 import os
 import json
 import time
 import uuid
 
-with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'AoE_Rec_Opening_Analysis', 'aoe2techtree', 'data','data.json')) as json_file:
+with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'aoe2techtree', 'data','data.json')) as json_file:
   aoe_data = json.load(json_file)
 
 class OpeningNames(generics.ListAPIView):
@@ -62,7 +62,6 @@ class Info(generics.ListAPIView):
     ret_dict["civs"] = civ_list
     ret_dict["ladders"] = Ladders.objects.order_by('name').values()
     ret_dict["maps"] = Maps.objects.order_by('name').values()
-    ret_dict["techs"] = Techs.objects.order_by('name').values()
     ret_dict["openings"] = opening_list
     content = JSONRenderer().render(ret_dict)
     return HttpResponse(content)
@@ -149,58 +148,6 @@ class MetaSnapshot(generics.ListAPIView):
     content = JSONRenderer().render(return_dict)
     return HttpResponse(content)
 
-class OpeningTechs(generics.ListAPIView):
-  def list (self, request):
-    data, error = utils.parse_standard_query_parameters(request, True)
-    if error:
-      return HttpResponseBadRequest()
-
-    #pull tech ids from query arg or default to age up times
-    if len(data['include_tech_ids']) and data['include_tech_ids'][0] != -1:
-      tech_ids = data['include_tech_ids']
-    else:
-      tech_ids = [101, 102, 103]
-    #pull strategies from query arg or default to basic
-    if len(data['include_opening_ids']) and data['include_opening_ids'][0] != -1:
-      strategies = data['include_opening_ids']
-    else:
-      strategies = range(len(utils.Basic_Strategies));
-
-    #get tech names, fall back to data sheet if needed
-    tech_ids_to_names = {}
-    for i in tech_ids:
-      tech = Techs.objects.get(pk=i)
-      if tech:
-        tech_ids_to_names[i] = tech.name.replace(' ', '_') #remove spaces so its a valid variable name
-      elif i in aoe_data["data"]["techs"]:
-        tech_ids_to_names[i] = aoe_data["data"]["techs"][str(i)]["internal_name"].replace(' ', '_')
-      else:
-        #unknown tech, error out
-        return HttpResponseBadRequest()
-
-    aggregate_string = "OpeningEloTechs.objects"
-    aggregate_string += utils.generate_filter_statements_from_parameters(data, include_opening_ids = False)
-    aggregate_string += '.filter(' #filter on only the tech ids we want
-    for i in range(len(tech_ids)):
-      aggregate_string += f'Q(tech_id={tech_ids[i]})'
-      if i + 1 < len(tech_ids):
-        aggregate_string += ' | ' #OR
-    aggregate_string += ')' #close filter
-    aggregate_string += '.aggregate(total=Sum("count"),' #Get a count of games
-    for i in tech_ids:
-      for opening_id in strategies:
-        opening_name = utils.OPENINGS[opening_id][0]
-        aggregate_string += f'{opening_name}__{tech_ids_to_names[i]}__{i}=Sum('
-        aggregate_string += f'Case(When(opening_id={opening_id}, tech_id={i}, then=F("average_time")*F("count"))))'
-        aggregate_string += f'/ Sum(Case(When(opening_id={opening_id}, tech_id={i},then="count")), output_field=FloatField()),'
-    aggregate_string += ')' #close aggregate
-    matches = eval(aggregate_string)
-    opening_list = utils.count_tech_response_to_dict(matches, aoe_data)
-    out_dict = {"total":matches["total"], "openings_list":opening_list}
-    # convert counts to something more readable
-    content = JSONRenderer().render(out_dict)
-    return HttpResponse(content)
-
 class Advanced(views.APIView):
   @never_cache
   def get(self, request):
@@ -243,7 +190,6 @@ class ImportMatches(views.APIView):
     start = time.time()
     civs_data_dict = {}
     openings_data_dict = {}
-    techs_data_dict = {}
 
     players_serializer = PlayersSerializer(data=request.data['players'], many=True)
     patches_serializer = PatchesSerializer(data=request.data['patches'], many=True)
@@ -261,7 +207,6 @@ class ImportMatches(views.APIView):
     Patches.objects.bulk_create(patch_generator(), ignore_conflicts=True)
 
     matches_serializer = MatchesSerializer(data=request.data['matches'], many=True)
-    actions_serializer = MatchPlayerActionsSerializer(data=request.data['match_player_actions'], many=True)
     matches_serializer.is_valid(raise_exception=True)
 
     matches = matches_serializer.save()
@@ -334,66 +279,6 @@ class ImportMatches(views.APIView):
       OpeningEloWins.objects.bulk_create(openings_objs)
     del openings_objs
     del openings_data_dict
-
-    print('Serializing actions!')
-    actions_serializer.is_valid(raise_exception=True)
-    actions_input = actions_serializer.validated_data
-    def match_actions_generator():
-      for action in actions_input:
-        (yield MatchPlayerActions(**action))
-
-
-    print('Creating actions!')
-    actions = MatchPlayerActions.objects.bulk_create(match_actions_generator())
-
-    print('Creating opening elo techs dict')
-    previous_match_id = -2
-    previous_match = False
-    previous_match_openings = {}
-    techs = [tech.id for tech in Techs.objects.all().iterator()]
-    for action in actions:
-      #ignore techs we dont care about currently
-      if action.event_type != 3 or action.event_id not in techs:
-        continue
-      if action.match_id == previous_match_id:
-        match = previous_match
-      else:
-        match = Matches.objects.filter(id=action.match_id).first()
-      previous_match_openings = utils.build_opening_elo_techs_for_match_and_action(match, action, techs_data_dict, previous_match_id, previous_match_openings)
-      #update last match cache
-      previous_match_id = action.match_id
-      previous_match = match
-
-    print("Updating elo techs")
-    total = len(techs_data_dict)
-    print("Rows to modify: " + str(total))
-    techs_objs = []
-    for k,v in techs_data_dict.items():
-      # try update, else create object to insert with bulk create later
-      updated_count = OpeningEloTechs.objects.filter(
-          opening_id=k[0],
-          tech_id=k[1],
-          map_id=k[2],
-          ladder_id=k[3],
-          patch_number=k[4],
-          elo=k[5]).update(
-              average_time=(F('average_time') * F('count') + v['average_time'] * v['research_count']) / (F('count') + v['research_count']),
-              count = F('count') + v['research_count'])
-      # if no records were updated
-      if updated_count == 0:
-        obj = OpeningEloTechs(
-          opening_id=k[0],
-          tech_id=k[1],
-          map_id=k[2],
-          ladder_id=k[3],
-          patch_number=k[4],
-          elo=k[5],
-          average_time=v['average_time'],
-          count=v['research_count'])
-        techs_objs.append(obj)
-
-    if len(techs_objs):
-      OpeningEloTechs.objects.bulk_create(techs_objs)
 
     end = time.time()
     print(f"ImportMatches took {end-start} seconds to complete!")

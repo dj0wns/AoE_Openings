@@ -57,7 +57,7 @@ class Advanced extends Component {
   constructor(props) {
     super(props);
     this.state = {
-        info: {civs:[], ladders:[], maps:[], patches:[], openings:[], techs:[]},
+        info: {civs:[], ladders:[], maps:[], patches:[], openings:[]},
         // Position:
         // -4 Error: Something was bad with the input and we got an error from the server.
         // -3 Error: too many combinations selected - total selected / max selected
@@ -248,7 +248,6 @@ class Advanced extends Component {
     fetch('/api/v1/info/')
     .then(res => res.json())
     .then((data) => {
-      data.techs.sort(function(a,b){return a-b});
       this.setState({ info: data });
       // Wait for info query to complete try and set up query params
       if (this.query_params) {

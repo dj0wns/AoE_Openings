@@ -26,19 +26,6 @@ class AdvancedQueryQueue(models.Model):
           models.Index(fields=['stale','query']),
           ]
 
-class MatchPlayerActions(models.Model):
-    match = models.ForeignKey('Matches', on_delete=models.CASCADE)
-    player = models.ForeignKey('Players', on_delete=models.CASCADE)
-    event_type = models.IntegerField()
-    event_id = models.IntegerField()
-    time = models.IntegerField()
-    duration = models.IntegerField()
-
-    class Meta:
-        db_table = 'match_player_actions'
-        unique_together = [['match', 'player', 'event_type', 'event_id']]
-
-
 class Matches(models.Model):
     average_elo = models.IntegerField()
     map_id = models.IntegerField()
@@ -136,14 +123,6 @@ class Players(models.Model):
     class Meta:
         db_table = 'players'
 
-#const table for storing specific tech names and ids
-class Techs(models.Model):
-  name = models.TextField()
-  duration = models.IntegerField()
-
-  class Meta:
-    db_table = 'techs'
-
 #const table for storing specific map names and ids
 class Maps(models.Model):
   name = models.TextField()
@@ -192,18 +171,3 @@ class OpeningEloWins(models.Model):
   class Meta:
     db_table = 'opening_elo_wins'
     unique_together = [['opening1_id', 'opening2_id', 'map_id', 'ladder_id', 'patch_number', 'elo']]
-
-class OpeningEloTechs(models.Model):
-  opening_id = models.IntegerField()
-  tech_id = models.IntegerField()
-  map_id = models.IntegerField()
-  ladder_id = models.IntegerField()
-  patch_number = models.IntegerField()
-  elo = models.IntegerField()
-  average_time = models.FloatField(default=0.)
-  count = models.IntegerField(default=0)
-
-  class Meta:
-    db_table = 'opening_elo_techs'
-    unique_together = [['opening_id', 'tech_id', 'map_id', 'ladder_id', 'patch_number', 'elo']]
-

@@ -14,6 +14,10 @@ class Home extends Component {
           </p>
         </div>
         <div class='text-div'>
+          <h2>Update (May 26, 2022)</h2>
+          <p>
+            We began reaching storage capacity limits (>22gb postgres database) 90%+ all used by the average tech timings tab. This seems to be a mostly useless and unused tab so it was removed. This allows us to store match data for longer and also reduces the cost to keep the website online substantially! I want to someday do something more with that data but what was implemented just wasn't a good use.
+          </p>
           <h2>Update (May 6, 2022)</h2>
           <p>
             The big release of the Advanced Query interface! Now you can query far more specific matchups as well look up personal stats with your aoe2.net profile id. This id can be found as the trailing numbers on your aoe2.net profile page. For example, Vinchesters's profile link is <a href="https://aoe2.net/#profile-271202">https://aoe2.net/#profile-271202</a> and therefore his profile id is 271202. Every completed response in the advanced query interface will create a unique link that can be copied and referenced at any point in the future to see that same data again. This has been a huge project and I am thrilled that it is finally ready to go public! Also, we have finally passed 3 million parsed replays! So much data!
