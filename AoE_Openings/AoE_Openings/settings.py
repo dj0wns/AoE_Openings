@@ -85,7 +85,13 @@ TEMPLATES = [
 
 STATICFILES_DIRS = (
     os.path.join(FRONTEND_DIR, 'build', 'static'),
+    # Civilization images
+    os.path.join(BACKEND_DIR, 'opening_stats',
+                              'aoe2techtree',
+                              'img',
+                              'Civs'),
 )
+STATIC_ROOT = os.path.join(BACKEND_DIR,'static/')
 
 WSGI_APPLICATION = 'AoE_Openings.wsgi.application'
 
@@ -99,8 +105,8 @@ DATABASES = {
         'NAME': 'aoe_openings_data',
         'USER': 'aoe_openings',
         'PASSWORD': os.getenv("DB_PW"),
-        'HOST': 'UPDATE',
-        'PORT': 'UPDATE',
+        'HOST': 'dj0wns-2488.postgres.pythonanywhere-services.com',
+        'PORT': '12488',
     }
 }
 
