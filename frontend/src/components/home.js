@@ -12,6 +12,10 @@ const Home = () => (
       </p>
     </div>
     <div class='text-div'>
+      <h2>Update (September 20, 2022)</h2>
+      <p>
+        Created a dump of the entire database with over 5 million matches for anyone who wants to play with the backbone of AoEPulse themselves. See this reddit post for more information. <a href="https://www.reddit.com/r/aoe2/comments/xj815r">https://www.reddit.com/r/aoe2/comments/xj815r</a>
+      </p>
       <h2>Update (May 26, 2022)</h2>
       <p>
         We began reaching storage capacity limits (>22gb postgres database) 90%+ all used by the average tech timings tab. This seems to be a mostly useless and unused tab so it was removed. This allows us to store match data for longer and also reduces the cost to keep the website online substantially! I want to someday do something more with that data but what was implemented just wasn't a good use.
