@@ -11,12 +11,12 @@ import { BrowserRouter, Route, Switch, Redirect } from 'react-router-dom';
 const App = () => (
   <BrowserRouter>
     <Menu/>
-    <div class="main-div">
+    <div class="layout">
       <Switch>
-        <Route 
+        <Route
           render={() => { return <Redirect to="/home"/>; }}
-          path="/" 
-          exact 
+          path="/"
+          exact
         />
         <Route path="/home" component={Home}/>
         <Route path="/about" component={About}/>
