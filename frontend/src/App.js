@@ -19,7 +19,7 @@ class App extends Component {
       <div>
         <BrowserRouter>
           <Menu/>
-          <div class="main-div">
+          <div class="layout">
             <Switch>
               <Route exact path="/" render={() => {
                       return (

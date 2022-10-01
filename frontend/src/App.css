@@ -43,9 +43,9 @@
   padding-left: 5%;
 }
 
-.main-div {
-  padding-left: 5%;
-  padding-right: 5%;
+.layout {
+  margin-top: 20px;
+  padding: 0 5%;
 }
 
 .text-div {
@@ -58,14 +58,18 @@
 }
 
 .rdt_TableCell {
-  font-size:Medium;
+  font-size: medium;
 }
 
 .rdt_TableHeadRow {
-  font-size:Large;
+  font-size: large;
 }
 
 .copyright-text {
-  font-size:Small;
+  font-size: small;
   text-align: center;
+}
+
+.submit-button {
+  margin: 10px 0 20px 5px;
 }
