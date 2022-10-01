@@ -13,7 +13,7 @@ class MetaSnapshotChart extends React.Component {
        for (let opening of data.meta_list) {
          let opening_dict = { x:[], y:[], stackgroup: 'one', groupnorm:'percent'}
          for (let [key, value] of Object.entries(opening)) {
-           if (key == "name") {
+           if (key === "name") {
              opening_dict['name'] = value;
            } else {
              opening_dict.x.push(key)
@@ -32,19 +32,18 @@ class MetaSnapshotChart extends React.Component {
       return (
         <Plot
           data={this.state.graph_data.meta_list}
-          layout={{title: 'Playrate of each Opening by Elo for Patch ' + this.state.graph_data.patch + ' on Arabia', responsive: true,
-                   xaxis: { title:"1v1 Elo"},
-                   yaxis: { title:"Percentage"},
-                   }}
+          layout={{
+            title: 'Playrate of each Opening by Elo for Patch ' + this.state.graph_data.patch + ' on Arabia', responsive: true,
+            xaxis: { title:"1v1 Elo"},
+            yaxis: { title:"Percentage"},
+          }}
           useResizeHandler= {true}
           style={{width:'%100', height: '%100'}}
         />
       );
-    } else {
-      return ( <div/>);
+    };
+    return null;
+  };
+};
 
-    }
-  }
-}
-
-export default MetaSnapshotChart
+export default MetaSnapshotChart;

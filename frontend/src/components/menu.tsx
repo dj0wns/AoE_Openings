@@ -18,7 +18,7 @@ const Menu = () => {
           </Nav>
           <Nav className='ml-auto'>
             <Navbar.Brand href='https://ko-fi.com/M4M7BG61H'>
-                <img height='36' src='https://cdn.ko-fi.com/cdn/kofi1.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' />
+              <img height='36' src='https://cdn.ko-fi.com/cdn/kofi1.png?v=3' alt='Buy Me a Coffee at ko-fi.com' />
             </Navbar.Brand>
             <Nav>
               <Nav.Link href={"/about"}>About</Nav.Link>
@@ -28,6 +28,6 @@ const Menu = () => {
       </Navbar>
     </div>
   );
-}
+};
 
 export default Menu;

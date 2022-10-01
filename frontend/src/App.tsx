@@ -11,7 +11,7 @@ import { BrowserRouter, Route, Switch, Redirect } from 'react-router-dom';
 const App = () => (
   <BrowserRouter>
     <Menu/>
-    <div class="layout">
+    <div className="layout">
       <Switch>
         <Route
           render={() => { return <Redirect to="/home"/>; }}
