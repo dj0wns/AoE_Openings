@@ -331,7 +331,7 @@ class Input extends Component {
             : <div/>
           }
           <div class="form-row">
-            <button class="btn btn-primary" type="submit">Submit</button>
+            <button class="submit-button btn btn-primary" type="submit">Submit</button>
           </div>
         </form>
       </div>

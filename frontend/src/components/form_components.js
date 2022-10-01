@@ -110,7 +110,7 @@ export const GeneralInput = ({data_class}) => (
 
 export const SubmitButton = ({data_class}) => (
   <div class="form-row justify-content-center align-self-center">
-    <button class="btn btn-primary" type="submit" disabled={data_class.state.position > -1}>Submit</button>
+    <button class="submit-button btn btn-primary" type="submit" disabled={data_class.state.position > -1}>Submit</button>
   </div>
 );
 
