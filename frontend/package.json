@@ -28,7 +28,11 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "eslint": "echo '##### LINTING JAVASCRIPT FILES ######' && eslint . --ext .js,.jsx,.ts,.tsx",
+    "eslint-fix": "echo '##### LINTING JAVASCRIPT FILES ######' && eslint . --fix --ext .js,.jsx,.ts,.tsx",
+    "lint": "yarn eslint",
+    "lint-fix": "yarn eslint-fix --quiet"
   },
   "eslintConfig": {
     "extends": [
@@ -47,5 +51,16 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": ">=5.31.0",
+    "@typescript-eslint/parser": ">=5.31.0",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-xo": "^0.42.0",
+    "eslint-config-xo-typescript": "^0.53.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-jsx-a11y": "^6.6.1",
+    "eslint-plugin-react": "^7.31.8",
+    "install-peerdeps": "^3.0.3"
   }
 }
