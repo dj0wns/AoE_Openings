@@ -10,12 +10,14 @@
 Update Pip dependencies
 ```pip install -r requirements.txt```
 
-###Set up a postgress database
-Set up a postgres database and add the login to `AoE_Openings/AoE_Openings/settings.py`, similar to (https://docs.djangoproject.com/en/4.1/ref/databases/#postgresql-notes)[https://docs.djangoproject.com/en/4.1/ref/databases/#postgresql-notes]
+### Set up a postgress database
+Set up a postgres database and add the login to `AoE_Openings/AoE_Openings/settings.py`, similar to https://docs.djangoproject.com/en/4.1/ref/databases/#postgresql-notes
 
 Then after that is set up, use the `AoE_Openings/manage.py` script to init the db. To do this:
-```python manage.py makemigrations
-python manage.py migrate```
+```
+python manage.py makemigrations
+python manage.py migrate
+```
 
 This should initialize the database for everything the backend needs to run.
 
