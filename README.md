@@ -27,4 +27,4 @@ Lastly collect static to get all your static files in one place.
 
 
 Then try to run the backend:
-1. `python manage.py run` should start the server on port 8000 and you should be able to connect to it `127.0.0.1:8000`
+1. `python manage.py runserver` should start the server on port 8000 and you should be able to connect to it `127.0.0.1:8000`
