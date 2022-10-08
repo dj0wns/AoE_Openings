@@ -76,7 +76,7 @@ class OpeningWins extends Component {
     return (
       <div>
         <Input defaultmirror={false} ref={this.input} callback={this.handleSubmit} parent_query={this.query_params} include_openings={true}/>
-        <center><h1>Loading Results...</h1></center>
+        <center><h4>Loading Results...</h4></center>
       </div>
     );
   }

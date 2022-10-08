@@ -84,7 +84,7 @@ class Civs extends Component {
     return (
       <div>
         <Input defaultmirror={true} ref={this.input} callback={this.handleSubmit} parent_query={this.query_params}/>
-        <center><h1>Loading Results...</h1></center>
+        <center><h4>Loading Results...</h4></center>
       </div>
     );
   }
